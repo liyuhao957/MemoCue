@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoCue - 智能提醒助手</title>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://unpkg.com/dayjs@1.x.x/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1.x.x/locale/zh-cn.js"></script>
+  <link href="styles.min.css" rel="stylesheet">
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-white to-gray-50">
+  <div x-data="memoCueApp()" x-init="init()" class="min-h-screen relative">
+
+    <!-- 装饰性背景元素 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+      <div class="decoration-blob decoration-blob-1 w-96 h-96 -top-48 -left-48"></div>
+      <div class="decoration-blob decoration-blob-2 w-96 h-96 -bottom-48 -right-48"></div>
+      <div class="decoration-blob decoration-blob-3 w-64 h-64 top-1/2 left-1/2"></div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+      <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-soft animate-pulse-soft">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">MemoCue</h1>
+            <p class="text-xs text-gray-500 -mt-0.5">智能提醒助手</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button @click="openModal('device')"
+                  class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <span class="hidden sm:inline">设备管理</span>
+          </button>
+          <button @click="editingTask = null; openModal('task')"
+                  class="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>新建提醒</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 relative">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- 侧边栏 -->
+        <aside class="lg:col-span-3">
+          <!-- 分类列表 -->
+          <div class="card-modern p-4 mb-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                分类
+              </h3>
+              <button @click="openModal('category')"
+                      class="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                添加
+              </button>
+            </div>
+            <ul class="space-y-1">
+              <li>
+                <button @click="currentCategory = 'all'"
+                        class="sidebar-item"
+                        :class="currentCategory === 'all' ? 'sidebar-item-active' : ''">
+                  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                  </div>
+                  <span class="flex-1 text-left">全部</span>
+                  <span class="min-w-[24px] text-center px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-100 rounded-full" x-text="tasks.length"></span>
+                </button>
+              </li>
+              <template x-for="category in categories" :key="category.id">
+                <li>
+                  <div @click="currentCategory = category.id" role="button" tabindex="0"
+                       class="sidebar-item group"
+                       :class="currentCategory === category.id ? 'sidebar-item-active' : ''">
+                    <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                      <span x-text="category.icon || '📁'" class="text-lg leading-none"></span>
+                    </div>
+                    <span class="flex-1 text-left" x-text="category.name"></span>
+                    <span class="min-w-[24px] text-center px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-100 rounded-full" x-text="getCategoryTaskCount(category.id)"></span>
+                    <button @click.stop="editCategory(category)"
+                            class="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-opacity">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
+
+          <!-- 统计信息 -->
+          <div class="stat-card">
+            <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              统计
+            </h3>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-800" x-text="tasks.length"></div>
+                <div class="text-xs text-gray-500">总数</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600" x-text="tasks.filter(t => t.enabled).length"></div>
+                <div class="text-xs text-gray-500">启用</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-400" x-text="tasks.filter(t => !t.enabled).length"></div>
+                <div class="text-xs text-gray-500">禁用</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 任务列表 -->
+        <div class="lg:col-span-9">
+          <!-- 搜索框 -->
+          <div class="card-modern p-4 mb-6">
+            <div class="search-box">
+              <svg class="search-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input type="text"
+                     x-model="searchQuery"
+                     placeholder="搜索提醒..."
+                     class="search-input">
+            </div>
+          </div>
+
+          <!-- 任务列表 -->
+          <div class="space-y-4">
+            <template x-for="task in filteredTasks" :key="task.id">
+              <div class="task-card group" :class="!task.enabled && 'opacity-70'">
+                <div class="p-5">
+                  <div class="flex items-start gap-4">
+                    <!-- 启用/禁用开关 -->
+                    <div class="pt-0.5">
+                      <button @click="toggleTask(task.id)"
+                              class="toggle-switch"
+                              :class="task.enabled ? 'toggle-switch-on' : 'toggle-switch-off'">
+                        <span class="toggle-switch-handle"
+                              :class="task.enabled ? 'translate-x-5' : 'translate-x-0'"></span>
+                      </button>
+                    </div>
+
+                    <!-- 任务信息 -->
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 class="font-semibold text-gray-900 text-lg" x-text="task.title"></h4>
+                          <p class="text-sm text-gray-600 mt-1 text-ellipsis-2" x-text="task.content"></p>
+                        </div>
+                        <!-- 分类标签 -->
+                        <template x-if="task.categoryId">
+                          <div class="ml-4">
+                            <span class="badge badge-primary" x-text="getCategoryName(task.categoryId)"></span>
+                          </div>
+                        </template>
+                      </div>
+
+                      <!-- 时间信息 -->
+                      <div class="flex flex-wrap items-center gap-4 mt-3 text-xs">
+                        <span class="flex items-center gap-1.5 text-gray-500">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <span x-text="formatSchedule(task.schedule)"></span>
+                        </span>
+                        <span x-show="task.lastPushAt" class="flex items-center gap-1.5 text-gray-500">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <span x-text="'上次: ' + formatTime(task.lastPushAt)"></span>
+                        </span>
+                        <span x-show="task.nextPushAt && task.enabled" class="flex items-center gap-1.5 text-blue-600">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <span x-text="'下次: ' + formatTime(task.nextPushAt)"></span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button @click="testPush(task)"
+                              class="btn-icon"
+                              title="测试推送">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                      </button>
+                      <button @click="editTask(task)"
+                              class="btn-icon"
+                              title="编辑">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                      </button>
+                      <button @click="deleteTask(task.id)"
+                              class="btn-icon"
+                              title="删除">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- 空状态 -->
+            <div x-show="filteredTasks.length === 0"
+                 class="card-gradient p-12 text-center">
+              <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">暂无提醒任务</h3>
+              <p class="text-gray-500 mb-6">创建你的第一个智能提醒</p>
+              <button @click="editingTask = null; openModal('task')"
+                      class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all inline-flex items-center gap-2 shadow-sm hover:shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                创建提醒
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 任务编辑模态框 -->
+    <div x-show="activeModal === 'task'"
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="modal-backdrop">
+      <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100"
+           x-transition:leave="transition ease-in duration-200"
+           x-transition:leave-start="opacity-100 scale-100"
+           x-transition:leave-end="opacity-0 scale-95"
+           class="modal-content">
+        <div class="p-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editingTask ? '编辑提醒' : '新建提醒'"></h2>
+
+          <form @submit.prevent="saveTask" class="space-y-5">
+            <!-- 标题 -->
+            <div>
+              <label class="label-modern">标题</label>
+              <input type="text" x-model="taskForm.title" required
+                     class="input-modern" placeholder="输入提醒标题">
+            </div>
+
+            <!-- 内容 -->
+            <div>
+              <label class="label-modern">内容</label>
+              <textarea x-model="taskForm.content" rows="3"
+                        class="input-modern" placeholder="输入提醒内容（可选）"></textarea>
+            </div>
+
+            <!-- 设备和分类 -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="label-modern">推送设备</label>
+                <select x-model="taskForm.deviceId" required
+                        class="select-modern">
+                  <option value="">选择设备</option>
+                  <template x-for="device in devices" :key="device.id">
+                    <option :value="device.id" x-text="device.name"></option>
+                  </template>
+                </select>
+              </div>
+              <div>
+                <label class="label-modern">分类</label>
+                <select x-model="taskForm.categoryId" required
+                        class="select-modern">
+                  <template x-for="category in categories" :key="category.id">
+                    <option :value="category.id" x-text="category.name"></option>
+                  </template>
+                </select>
+              </div>
+            </div>
+
+            <!-- 调度类型 -->
+            <div>
+              <label class="label-modern">重复类型</label>
+              <select x-model="taskForm.schedule.type"
+                      @change="onScheduleTypeChange"
+                      class="select-modern">
+                <option value="once">单次</option>
+                <option value="daily">每天</option>
+                <option value="weekly">每周</option>
+                <option value="monthly">每月</option>
+                <option value="cron">Cron表达式</option>
+              </select>
+            </div>
+
+            <!-- 调度配置 -->
+            <div x-show="taskForm.schedule.type === 'once'">
+              <label class="label-modern">执行时间</label>
+              <input type="datetime-local" x-model="taskForm.schedule.datetime"
+                     class="input-modern">
+            </div>
+
+            <div x-show="taskForm.schedule.type === 'daily'">
+              <label class="label-modern">每天时间</label>
+              <input type="time" x-model="taskForm.schedule.time"
+                     class="input-modern">
+            </div>
+
+            <div x-show="taskForm.schedule.type === 'weekly'">
+              <label class="label-modern">每周时间</label>
+              <input type="time" x-model="taskForm.schedule.time"
+                     class="input-modern mb-3">
+              <div class="flex gap-2">
+                <template x-for="(day, index) in ['日', '一', '二', '三', '四', '五', '六']" :key="index">
+                  <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" :value="index" x-model="taskForm.schedule.days"
+                           class="mr-1.5 rounded">
+                    <span x-text="day" class="text-sm"></span>
+                  </label>
+                </template>
+              </div>
+            </div>
+
+            <div x-show="taskForm.schedule.type === 'monthly'">
+              <label class="label-modern">每月日期和时间</label>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="number" min="1" max="31" x-model="taskForm.schedule.day"
+                       placeholder="日期 (1-31)"
+                       class="input-modern">
+                <input type="time" x-model="taskForm.schedule.time"
+                       class="input-modern">
+              </div>
+            </div>
+
+            <div x-show="taskForm.schedule.type === 'cron'">
+              <label class="label-modern">Cron 表达式</label>
+              <input type="text" x-model="taskForm.schedule.expression"
+                     placeholder="0 10 * * 1-5"
+                     class="input-modern">
+              <p class="text-xs text-gray-500 mt-2">格式: 分 时 日 月 周</p>
+            </div>
+
+            <!-- 按钮 -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button type="button" @click="closeModal()"
+                      class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                取消
+              </button>
+              <button type="submit"
+                      class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
+                保存
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设备管理模态框 -->
+    <div x-show="activeModal === 'device'"
+         x-cloak
+         x-transition
+         class="modal-backdrop">
+      <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
+           x-transition
+           class="modal-content">
+        <div class="p-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-6">设备管理</h2>
+
+          <!-- 设备列表 -->
+          <div class="space-y-3 mb-6">
+            <template x-for="device in devices" :key="device.id">
+              <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="font-medium text-gray-800" x-text="device.name"></span>
+                    <span x-show="device.isDefault" class="ml-2 badge badge-success">默认</span>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button @click="testDevice(device.id)"
+                          class="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                    测试
+                  </button>
+                  <button @click="deleteDevice(device.id)"
+                          class="text-sm text-red-500 hover:text-red-600 font-medium">
+                    删除
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- 添加设备表单 -->
+          <div class="border-t border-gray-100 pt-6">
+            <h3 class="font-semibold text-gray-800 mb-4">添加 Bark 设备</h3>
+            <form @submit.prevent="addDevice" class="space-y-4">
+              <div>
+                <label class="label-modern">设备名称</label>
+                <input type="text" x-model="deviceForm.name" required
+                       placeholder="我的 iPhone"
+                       class="input-modern">
+              </div>
+              <div>
+                <label class="label-modern">Bark 服务器</label>
+                <input type="url" x-model="deviceForm.server" required
+                       placeholder="https://api.day.app"
+                       class="input-modern">
+              </div>
+              <div>
+                <label class="label-modern">设备 Key</label>
+                <input type="text" x-model="deviceForm.key" required
+                       placeholder="你的Bark设备Key"
+                       class="input-modern">
+              </div>
+              <button type="submit"
+                      class="w-full px-4 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
+                添加设备
+              </button>
+            </form>
+          </div>
+
+          <!-- 关闭按钮 -->
+          <div class="flex justify-end mt-6 pt-4 border-t border-gray-100">
+            <button @click="closeModal()"
+                    class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分类管理模态框 -->
+    <div x-show="activeModal === 'category'"
+         x-cloak
+         x-transition
+         class="modal-backdrop">
+      <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
+           x-transition
+           class="modal-content max-w-md">
+        <div class="p-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editingCategory ? '编辑分类' : '新建分类'"></h2>
+
+          <form @submit.prevent="saveCategory" class="space-y-4">
+            <div>
+              <label class="label-modern">分类名称</label>
+              <input type="text" x-model="categoryForm.name" required
+                     class="input-modern" placeholder="工作">
+            </div>
+            <div>
+              <label class="label-modern">图标</label>
+              <input type="text" x-model="categoryForm.icon" maxlength="2"
+                     placeholder="📁"
+                     class="input-modern">
+            </div>
+            <div>
+              <label class="label-modern">颜色</label>
+              <input type="color" x-model="categoryForm.color"
+                     class="w-full h-12 rounded-xl border border-gray-200/50 cursor-pointer">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button type="button" @click="closeModal()"
+                      class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                取消
+              </button>
+              <button type="submit"
+                      class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
+                保存
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div x-show="message"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 right-6 card-modern p-4 max-w-sm z-50">
+      <div class="flex items-center gap-3">
+        <template x-if="message.type === 'success'">
+          <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </template>
+        <template x-if="message.type === 'error'">
+          <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+        </template>
+        <div>
+          <p class="font-semibold text-gray-800" x-text="message.title"></p>
+          <p class="text-sm text-gray-600" x-text="message.text"></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
