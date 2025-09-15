@@ -101,17 +101,23 @@ class Scheduler {
       // 移除已存在的任务
       this.removeTask(task.id);
 
+      // 始终基于当前时间重新计算，不依赖文件中的旧值
+      const freshTask = { ...task };
+      delete freshTask.nextPushAt; // 忽略文件中的旧值
+
       // 计算下次执行时间
-      const nextPushAt = this.calculateNextPushTime(task);
+      const nextPushAt = this.calculateNextPushTime(freshTask);
       if (!nextPushAt) {
         logger.info('Task has no future execution time', { taskId: task.id });
         return;
       }
 
       // 创建任务记录
+      const isoString = nextPushAt.toISOString();
+
       const job = {
         task,
-        nextPushAt: nextPushAt.toISOString(),
+        nextPushAt: isoString,
         retryCount: 0
       };
 
@@ -131,7 +137,8 @@ class Scheduler {
       this.jobs.set(task.id, job);
 
       // 更新任务的下次执行时间
-      await this.updateTaskNextPushAt(task.id, nextPushAt.toISOString());
+      const updateIsoString = nextPushAt.toISOString();
+      await this.updateTaskNextPushAt(task.id, updateIsoString);
 
       logger.info('Task scheduled', {
         taskId: task.id,
@@ -264,14 +271,45 @@ class Scheduler {
         return onceTime.isAfter(now) ? onceTime : null;
 
       case 'hourly':
-        const nextHour = now.add(1, 'hour').minute(schedule.minute).second(0);
-        if (schedule.startHour !== undefined && schedule.endHour !== undefined) {
-          const hour = nextHour.hour();
+        // 获取目标分钟
+        const targetMinute = schedule.minute || 0;
+
+        // 获取当前时间
+        const currentTime = dayjs().tz(this.timezone);
+        const currentMinute = currentTime.minute();
+
+
+        // 计算下次执行时间
+        let nextTime;
+        if (currentMinute < targetMinute) {
+          // 还没到目标分钟，当前小时的目标分钟
+          nextTime = currentTime
+            .minute(targetMinute)
+            .second(0)
+            .millisecond(0);
+        } else {
+          // 已过目标分钟，下一小时的目标分钟
+          nextTime = currentTime
+            .add(1, 'hour')
+            .minute(targetMinute)
+            .second(0)
+            .millisecond(0);
+        }
+
+        // 检查时间范围限制 - 只有当 startHour 和 endHour 都有效值时才检查
+        if (schedule.startHour !== undefined && schedule.startHour !== null &&
+            schedule.endHour !== undefined && schedule.endHour !== null) {
+          const hour = nextTime.hour();
+
           if (hour < schedule.startHour || hour > schedule.endHour) {
-            return nextHour.hour(schedule.startHour).add(1, 'day');
+            // 如果不在允许的时间范围内，设置为下一天的开始时间
+            const beforeAdjust = nextTime.format('YYYY-MM-DD HH:mm:ss');
+            nextTime = nextTime.add(1, 'day').hour(schedule.startHour).minute(targetMinute);
           }
         }
-        return nextHour;
+
+
+        return nextTime;
 
       case 'everyNHours':
         const interval = schedule.interval;
@@ -335,6 +373,47 @@ class Scheduler {
 
         return nextMonthly;
 
+      case 'monthlyInterval':
+        // 每N个月执行一次
+        const monthInterval = schedule.interval || 1;
+        const [miHour, miMinute] = schedule.time.split(':').map(Number);
+
+        // 如果有上次执行时间，基于它计算
+        let baseTime = task.lastExecutedAt ?
+          dayjs(task.lastExecutedAt).tz(this.timezone) :
+          dayjs(task.createdAt || now).tz(this.timezone);
+
+        // 设置到指定的日期和时间
+        let nextMonthlyInterval = baseTime
+          .date(schedule.day)
+          .hour(miHour)
+          .minute(miMinute)
+          .second(0)
+          .millisecond(0);
+
+        // 如果基准时间已经是目标日期时间之后，则从下个月开始计算
+        if (baseTime.isAfter(nextMonthlyInterval)) {
+          nextMonthlyInterval = nextMonthlyInterval.add(1, 'month');
+        }
+
+        // 添加间隔月份
+        nextMonthlyInterval = nextMonthlyInterval.add(monthInterval - 1, 'month');
+
+        // 确保时间在未来
+        while (nextMonthlyInterval.isBefore(now) || nextMonthlyInterval.isSame(now)) {
+          nextMonthlyInterval = nextMonthlyInterval.add(monthInterval, 'month');
+        }
+
+        // 处理月末日期溢出
+        if (schedule.rollover === 'clip') {
+          const lastDay = nextMonthlyInterval.endOf('month').date();
+          if (schedule.day > lastDay) {
+            nextMonthlyInterval = nextMonthlyInterval.date(lastDay);
+          }
+        }
+
+        return nextMonthlyInterval;
+
       case 'cron':
         // Cron 表达式由 node-cron 处理
         return dayjs().add(1, 'minute');
@@ -347,11 +426,14 @@ class Scheduler {
 
   // 更新任务的下次执行时间
   async updateTaskNextPushAt(taskId, nextPushAt) {
+
     await fileStore.updateJson('tasks.json', (tasks) => {
       const task = tasks.find(t => t.id === taskId);
       if (task) {
+        const oldValue = task.nextPushAt;
         task.nextPushAt = nextPushAt;
         task.updatedAt = new Date().toISOString();
+
       }
       return tasks;
     }, []);

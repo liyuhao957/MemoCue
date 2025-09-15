@@ -224,6 +224,12 @@ function memoCueApp() {
             schedule.time = data.schedule.time;
             schedule.day = Number(data.schedule.day);
             break;
+          case 'monthlyInterval':
+            schedule.type = 'monthlyInterval';
+            schedule.time = data.schedule.time;
+            schedule.day = Number(data.schedule.day);
+            schedule.interval = Number(data.schedule.interval) || 1;
+            break;
           case 'cron':
             schedule.type = 'cron';
             schedule.expression = data.schedule.expression;
@@ -387,6 +393,15 @@ function memoCueApp() {
         case 'weekly':
           this.taskForm.schedule.days = [1]; // 默认周一
           break;
+        case 'monthly':
+          this.taskForm.schedule.day = 1;
+          this.taskForm.schedule.time = '10:00';
+          break;
+        case 'monthlyInterval':
+          this.taskForm.schedule.interval = 3;
+          this.taskForm.schedule.day = 15;
+          this.taskForm.schedule.time = '10:00';
+          break;
       }
     },
 
@@ -408,6 +423,8 @@ function memoCueApp() {
           return `每周${days} ${schedule.time}`;
         case 'monthly':
           return `每月${schedule.day}日 ${schedule.time}`;
+        case 'monthlyInterval':
+          return `每${schedule.interval}个月的${schedule.day}日 ${schedule.time}`;
         case 'cron':
           return `Cron: ${schedule.expression}`;
         default:
@@ -472,9 +489,21 @@ function memoCueApp() {
 
     // 打开/关闭弹窗（互斥）
     openModal(type) {
+      // 打开模态框前先重置对应的表单数据
+      if (type === 'task' && !this.editingTask) {
+        this.resetTaskForm();
+      } else if (type === 'category' && !this.editingCategory) {
+        this.resetCategoryForm();
+      }
       this.activeModal = type; // 保证同一时间仅一个弹窗
     },
     closeModal() {
+      // 关闭模态框时重置对应的表单数据
+      if (this.activeModal === 'task') {
+        this.resetTaskForm();
+      } else if (this.activeModal === 'category') {
+        this.resetCategoryForm();
+      }
       this.activeModal = null;
     }
   };
