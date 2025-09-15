@@ -200,6 +200,16 @@ function memoCueApp() {
             schedule.type = 'once';
             schedule.datetime = data.schedule.datetime;
             break;
+          case 'hourly':
+            schedule.type = 'hourly';
+            schedule.minute = Number(data.schedule.minute) || 0;
+            if (data.schedule.startHour !== '' && data.schedule.startHour !== null) {
+              schedule.startHour = Number(data.schedule.startHour);
+            }
+            if (data.schedule.endHour !== '' && data.schedule.endHour !== null) {
+              schedule.endHour = Number(data.schedule.endHour);
+            }
+            break;
           case 'daily':
             schedule.type = 'daily';
             schedule.time = data.schedule.time;
@@ -369,6 +379,11 @@ function memoCueApp() {
         case 'once':
           this.taskForm.schedule.datetime = dayjs().add(1, 'hour').format('YYYY-MM-DDTHH:mm');
           break;
+        case 'hourly':
+          this.taskForm.schedule.minute = 0; // 默认整点
+          this.taskForm.schedule.startHour = '';
+          this.taskForm.schedule.endHour = '';
+          break;
         case 'weekly':
           this.taskForm.schedule.days = [1]; // 默认周一
           break;
@@ -378,6 +393,12 @@ function memoCueApp() {
     // 格式化调度信息
     formatSchedule(schedule) {
       switch (schedule.type) {
+        case 'hourly':
+          let hourlyText = `每小时第${schedule.minute}分钟`;
+          if (schedule.startHour !== undefined && schedule.endHour !== undefined) {
+            hourlyText += ` (${schedule.startHour}:00-${schedule.endHour}:00)`;
+          }
+          return hourlyText;
         case 'once':
           return `单次 ${dayjs(schedule.datetime).format('MM-DD HH:mm')}`;
         case 'daily':
@@ -414,7 +435,10 @@ function memoCueApp() {
           datetime: '',
           days: [],
           day: 15,
-          expression: ''
+          expression: '',
+          minute: 0,
+          startHour: '',
+          endHour: ''
         },
         priority: 0,
         sound: 'default'
