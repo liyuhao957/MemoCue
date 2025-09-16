@@ -27,47 +27,49 @@
         </button>
       </div>
 
-      <div class="modal-body">
-        <section class="section-card">
-          <h3 class="section-title">基础信息</h3>
-          <div class="form-grid">
-            <div class="form-field form-field--full">
-              <label class="label-modern">标题</label>
-              <input type="text" x-model="taskForm.title" required
-                     class="input-modern"
-                     placeholder="输入提醒标题">
+      <div class="modal-body modal-body--two-column">
+        <div class="modal-column">
+          <section class="section-card">
+            <h3 class="section-title">基础信息</h3>
+            <div class="form-stack">
+              <div class="form-field">
+                <label class="label-modern">标题</label>
+                <input type="text" x-model="taskForm.title" required
+                       class="input-modern"
+                       placeholder="输入提醒标题">
+              </div>
+              <div class="form-field">
+                <label class="label-modern">内容</label>
+                <textarea x-model="taskForm.content" rows="2"
+                          class="input-modern textarea-modern"
+                          placeholder="输入提醒内容（可选）"></textarea>
+              </div>
+              <div class="form-field">
+                <label class="label-modern">推送设备</label>
+                <select x-model="taskForm.deviceId" required
+                        class="select-modern">
+                  <option value="">选择设备</option>
+                  <template x-for="device in devices" :key="device.id">
+                    <option :value="device.id" x-text="device.name"></option>
+                  </template>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="label-modern">分类</label>
+                <select x-model="taskForm.categoryId" required
+                        class="select-modern">
+                  <template x-for="category in categories" :key="category.id">
+                    <option :value="category.id" x-text="category.name"></option>
+                  </template>
+                </select>
+              </div>
             </div>
-            <div class="form-field form-field--full">
-              <label class="label-modern">内容</label>
-              <textarea x-model="taskForm.content" rows="3"
-                        class="input-modern textarea-modern"
-                        placeholder="输入提醒内容（可选）"></textarea>
-            </div>
-            <div class="form-field">
-              <label class="label-modern">推送设备</label>
-              <select x-model="taskForm.deviceId" required
-                      class="select-modern">
-                <option value="">选择设备</option>
-                <template x-for="device in devices" :key="device.id">
-                  <option :value="device.id" x-text="device.name"></option>
-                </template>
-              </select>
-            </div>
-            <div class="form-field">
-              <label class="label-modern">分类</label>
-              <select x-model="taskForm.categoryId" required
-                      class="select-modern">
-                <template x-for="category in categories" :key="category.id">
-                  <option :value="category.id" x-text="category.name"></option>
-                </template>
-              </select>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <section class="section-card">
-          <h3 class="section-title">时间安排</h3>
-          <p class="section-subtitle">根据提醒频率填写对应的执行规则</p>
+        <div class="modal-column">
+          <section class="section-card">
+            <h3 class="section-title">时间安排</h3>
           <div class="form-grid">
             <div class="form-field form-field--full">
               <label class="label-modern">重复类型</label>
@@ -92,9 +94,8 @@
                      class="input-modern">
             </div>
 
-            <div class="schedule-panel" x-show="taskForm.schedule.type === 'hourly'">
-              <h4 class="panel-title">每小时配置</h4>
-              <div class="form-grid">
+            <div class="schedule-panel schedule-panel--compact" x-show="taskForm.schedule.type === 'hourly'">
+              <div class="form-grid form-grid--compact">
                 <div class="form-field">
                   <label class="text-sm text-gray-600">在每小时的第几分钟执行</label>
                   <input type="number" min="0" max="59" x-model="taskForm.schedule.minute"
@@ -102,7 +103,7 @@
                          class="input-modern">
                 </div>
                 <div class="form-field form-field--split">
-                  <label class="text-sm text-gray-600">时间范围（可选）</label>
+                  <label class="text-sm text-gray-600">时间范围</label>
                   <div class="form-grid form-grid--split">
                     <input type="number" min="0" max="23" x-model="taskForm.schedule.startHour"
                            placeholder="开始时间 (0-23)"
@@ -149,9 +150,8 @@
               </div>
             </div>
 
-            <div class="schedule-panel" x-show="taskForm.schedule.type === 'monthlyInterval'">
-              <h4 class="panel-title">每N个月配置</h4>
-              <div class="form-grid">
+            <div class="schedule-panel schedule-panel--compact" x-show="taskForm.schedule.type === 'monthlyInterval'">
+              <div class="form-grid form-grid--compact">
                 <div class="form-field form-field--inline">
                   <div class="inline-pill">
                     <span class="inline-pill__prefix">每</span>
@@ -191,7 +191,8 @@
               <p class="panel-note">格式: 分 时 日 月 周</p>
             </div>
           </div>
-        </section>
+          </section>
+        </div>
       </div>
 
       <div class="modal-footer">

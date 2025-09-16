@@ -461,15 +461,15 @@
   }
 
   .modal-header {
-    @apply flex items-start justify-between gap-6 px-8 py-6 border-b border-gray-100;
+    @apply flex items-start justify-between gap-3 px-5 py-3 border-b border-gray-100;
   }
 
   .modal-title {
-    @apply text-2xl font-bold text-gray-800;
+    @apply text-lg font-bold text-gray-800;
   }
 
   .modal-subtitle {
-    @apply mt-2 text-sm text-gray-500 leading-relaxed max-w-2xl;
+    @apply mt-0.5 text-xs text-gray-500 leading-relaxed max-w-2xl;
   }
 
   .modal-close {
@@ -481,12 +481,34 @@
   }
 
   .modal-body {
-    @apply flex-1 overflow-y-auto px-8 py-6 space-y-6;
+    @apply flex-1 overflow-y-auto px-5 py-2 space-y-2;
+  }
+
+  .modal-body--two-column {
+    @apply grid gap-3;
+  }
+
+  @media (min-width: 768px) {
+    .modal-body--two-column {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .modal-column {
+    @apply flex flex-col;
+  }
+
+  .form-stack {
+    @apply flex flex-col gap-3;
   }
 
   .section-card {
-    @apply rounded-3xl border border-gray-100 bg-white/95 shadow-sm p-6 space-y-6;
-    box-shadow: 0 28px 55px -40px rgba(15, 23, 42, 0.25);
+    @apply rounded-xl border border-gray-100 bg-white/95 shadow-sm p-3 space-y-2;
+    box-shadow: 0 12px 25px -20px rgba(15, 23, 42, 0.15);
+  }
+
+  .section-card--compact {
+    @apply p-2.5 space-y-1.5;
   }
 
   .section-title {
@@ -498,7 +520,11 @@
   }
 
   .form-grid {
-    @apply grid gap-4;
+    @apply grid gap-3;
+  }
+
+  .form-grid--compact {
+    @apply gap-2;
   }
 
   @screen md {
@@ -556,15 +582,19 @@
   }
 
   .textarea-modern {
-    @apply min-h-[112px] resize-none;
+    @apply min-h-[80px] resize-none;
   }
 
   .schedule-panels {
-    @apply space-y-6;
+    @apply space-y-3;
   }
 
   .schedule-panel {
-    @apply flex flex-col gap-3 rounded-2xl border border-gray-100 bg-slate-50/60 p-4;
+    @apply flex flex-col gap-2 rounded-xl border border-gray-100 bg-slate-50/60 p-3;
+  }
+
+  .schedule-panel--compact {
+    @apply p-2.5 gap-2;
   }
 
   .panel-title {
@@ -609,7 +639,7 @@
   }
 
   .modal-footer {
-    @apply flex justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-white;
+    @apply flex justify-end gap-3 px-5 py-2.5 border-t border-gray-100 bg-white;
   }
 
   .modal-btn {
@@ -736,8 +766,8 @@
   }
 
   .category-field-card {
-    @apply relative flex flex-col gap-3 rounded-3xl border border-gray-200/70 bg-white/90 p-5 shadow-sm;
-    box-shadow: 0 28px 50px -40px rgba(15, 23, 42, 0.28);
+    @apply relative flex flex-col gap-2 rounded-2xl border border-gray-200/70 bg-white/90 p-3 shadow-sm;
+    box-shadow: 0 18px 30px -30px rgba(15, 23, 42, 0.2);
   }
 
   .category-field-card--tall {
@@ -830,8 +860,13 @@
   }
 
   .emoji-picker {
-    @apply grid gap-3;
-    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+    @apply grid gap-2;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  }
+
+  .emoji-picker--compact {
+    @apply gap-1.5;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   }
 
   @screen md {
@@ -847,7 +882,11 @@
   }
 
   .emoji-picker__item {
-    @apply flex h-12 items-center justify-center rounded-2xl border border-gray-200 bg-white text-2xl transition-all duration-150 shadow-sm;
+    @apply flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl transition-all duration-150 shadow-sm;
+  }
+
+  .emoji-picker--compact .emoji-picker__item {
+    @apply h-9 text-lg rounded-lg;
   }
 
   .emoji-picker__item:hover {
@@ -924,6 +963,52 @@
     @apply shadow-lg hover:shadow-xl transform hover:scale-110;
     @apply transition-all duration-200 flex items-center justify-center;
     @apply z-40;
+  }
+
+  /* New compact layout styles for modals */
+  .category-form__row {
+    @apply grid gap-4;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .category-form__icon-section {
+    @apply flex flex-col gap-2;
+  }
+
+  .category-form__color-section {
+    @apply flex flex-col gap-2;
+  }
+
+  .icon-input-group {
+    @apply flex flex-col gap-2;
+  }
+
+  .input-icon {
+    @apply text-center text-2xl;
+  }
+
+  .emoji-grid-compact {
+    @apply grid grid-cols-5 gap-1;
+  }
+
+  .emoji-btn-compact {
+    @apply h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-lg transition-all duration-150;
+  }
+
+  .emoji-btn-compact:hover {
+    @apply border-blue-300 bg-blue-50;
+  }
+
+  .emoji-btn-compact--active {
+    @apply border-blue-400 bg-blue-100;
+  }
+
+  .color-input-group {
+    @apply flex items-center gap-3;
+  }
+
+  .color-badge {
+    @apply px-3 py-1 rounded-lg bg-gray-100 text-xs font-mono;
   }
 }
 
