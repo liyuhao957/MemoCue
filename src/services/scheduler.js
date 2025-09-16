@@ -239,46 +239,77 @@ class Scheduler {
    * 计算下次推送时间 - 使用TimeCalculator
    */
   calculateNextPushTime(task) {
-    const { scheduleType, scheduleValue } = task;
+    // 兼容新旧数据格式
+    const schedule = task.schedule || { type: task.scheduleType, value: task.scheduleValue };
+    const scheduleType = schedule.type || task.scheduleType;
 
     switch (scheduleType) {
       case 'once':
-        return new Date(scheduleValue) > new Date()
-          ? new Date(scheduleValue)
+        const datetime = schedule.datetime || task.scheduleValue;
+        return new Date(datetime) > new Date()
+          ? new Date(datetime)
           : null;
 
+      case 'hourly':
+        return TimeCalculator.calculateHourly(
+          schedule.minute,
+          schedule.startHour,
+          schedule.endHour
+        );
+
       case 'daily':
-        return TimeCalculator.calculateDaily(scheduleValue.times);
+        const dailyTimes = schedule.times || (schedule.time ? [schedule.time] : []);
+        return TimeCalculator.calculateDaily(dailyTimes);
 
       case 'weekly':
         return TimeCalculator.calculateWeekly(
-          scheduleValue.weekDays,
-          scheduleValue.time
+          schedule.days || schedule.weekDays,
+          schedule.time
         );
 
       case 'monthly':
         return TimeCalculator.calculateMonthly(
-          scheduleValue.days,
-          scheduleValue.time
+          schedule.day ? [schedule.day] : schedule.days,
+          schedule.time
         );
+
+      case 'monthlyInterval':
+        // 计算每N个月的调度
+        const { interval, day, time } = schedule;
+        if (!interval || !day || !time) return null;
+
+        const now = new Date();
+        const [hours, minutes] = time.split(':').map(Number);
+        const nextTime = new Date(now);
+
+        // 设置到指定日期和时间
+        nextTime.setDate(day);
+        nextTime.setHours(hours, minutes, 0, 0);
+
+        // 如果这个月的时间已经过了，移到下个间隔
+        if (nextTime <= now) {
+          nextTime.setMonth(nextTime.getMonth() + interval);
+        }
+
+        return nextTime;
 
       case 'interval':
         return TimeCalculator.calculateInterval(
-          scheduleValue.interval,
+          schedule.interval || task.scheduleValue?.interval,
           task.lastPushAt
         );
 
       case 'workdays':
-        return TimeCalculator.calculateWorkdays(scheduleValue.times);
+        return TimeCalculator.calculateWorkdays(schedule.times || task.scheduleValue?.times);
 
       case 'weekend':
-        return TimeCalculator.calculateWeekend(scheduleValue.times);
+        return TimeCalculator.calculateWeekend(schedule.times || task.scheduleValue?.times);
 
       case 'cron':
-        return TimeCalculator.calculateCron(scheduleValue);
+        return TimeCalculator.calculateCron(schedule.expression || task.scheduleValue);
 
       case 'custom':
-        return TimeCalculator.calculateCustom(scheduleValue.dates);
+        return TimeCalculator.calculateCustom(schedule.dates || task.scheduleValue?.dates);
 
       default:
         logger.warn('未知的调度类型', {

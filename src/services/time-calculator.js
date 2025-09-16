@@ -110,6 +110,47 @@ class TimeCalculator {
   }
 
   /**
+   * 计算每小时推送的下次时间
+   * @param {Number} minute - 每小时的第几分钟
+   * @param {Number} startHour - 开始时间（可选）
+   * @param {Number} endHour - 结束时间（可选）
+   * @returns {Date|null}
+   */
+  static calculateHourly(minute, startHour, endHour) {
+    const now = new Date();
+    const nextTime = new Date(now);
+
+    // 设置到指定分钟
+    nextTime.setMinutes(minute, 0, 0);
+
+    // 如果当前时间已经过了这个分钟，移到下一个小时
+    if (nextTime <= now) {
+      nextTime.setHours(nextTime.getHours() + 1);
+    }
+
+    // 如果有时间范围限制
+    if (startHour !== undefined && startHour !== null &&
+        endHour !== undefined && endHour !== null) {
+      const currentHour = nextTime.getHours();
+
+      // 如果下次执行时间不在范围内
+      if (currentHour < startHour || currentHour > endHour) {
+        // 设置到下一个开始时间
+        if (currentHour < startHour) {
+          // 今天的开始时间
+          nextTime.setHours(startHour, minute, 0, 0);
+        } else {
+          // 明天的开始时间
+          nextTime.setDate(nextTime.getDate() + 1);
+          nextTime.setHours(startHour, minute, 0, 0);
+        }
+      }
+    }
+
+    return nextTime;
+  }
+
+  /**
    * 计算间隔推送的下次时间
    * @param {Number} interval - 间隔（分钟）
    * @param {Date} lastPushAt - 上次推送时间
