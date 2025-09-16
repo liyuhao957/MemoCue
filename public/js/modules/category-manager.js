@@ -1,12 +1,20 @@
 // 分类管理模块
+const DEFAULT_CATEGORY_ICON = '📁';
+const DEFAULT_CATEGORY_COLOR = '#4F46E5';
+const CATEGORY_EMOJI_PRESETS = [
+  '📁', '🗂️', '📝', '📅', '💼', '🎯', '🛠️', '📚', '💡', '❤️', '🌟', '🏠', '🧘', '🛒', '🚀'
+];
+
 window.CategoryManager = {
+  emojiPresets: CATEGORY_EMOJI_PRESETS,
+
   // 编辑分类
   editCategory(category, app) {
     app.editingCategory = category;
     app.categoryForm = {
       name: category.name,
-      icon: category.icon || '📁',
-      color: category.color || '#4F46E5'
+      icon: category.icon || DEFAULT_CATEGORY_ICON,
+      color: category.color || DEFAULT_CATEGORY_COLOR
     };
     app.openModal('category');
   },
@@ -48,8 +56,8 @@ window.CategoryManager = {
     app.editingCategory = null;
     app.categoryForm = {
       name: '',
-      icon: '📁',
-      color: '#4F46E5'
+      icon: DEFAULT_CATEGORY_ICON,
+      color: DEFAULT_CATEGORY_COLOR
     };
   }
 };

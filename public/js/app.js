@@ -54,6 +54,8 @@ function memoCueApp() {
       color: '#4F46E5'
     },
 
+    emojiPresets: CategoryManager.emojiPresets,
+
     // 初始化
     async init() {
       await this.loadData();

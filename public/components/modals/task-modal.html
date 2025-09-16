@@ -153,10 +153,13 @@
               <h4 class="panel-title">每N个月配置</h4>
               <div class="form-grid">
                 <div class="form-field form-field--inline">
-                  <span class="panel-note">每</span>
-                  <input type="number" min="1" max="12" x-model="taskForm.schedule.interval"
-                         class="input-modern input-compact">
-                  <span class="panel-note">个月执行一次</span>
+                  <div class="inline-pill">
+                    <span class="inline-pill__prefix">每</span>
+                    <input type="number" min="1" max="12" x-model="taskForm.schedule.interval"
+                           class="input-modern inline-pill__input">
+                    <span class="inline-pill__suffix">个月执行一次</span>
+                    <span class="inline-pill__hint">可直接输入 1-12 的数字</span>
+                  </div>
                 </div>
                 <div class="form-field form-field--split">
                   <label class="text-sm text-gray-600">首次执行日期和时间</label>

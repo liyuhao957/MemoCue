@@ -5,37 +5,81 @@
      class="modal-backdrop">
   <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
        x-transition
-       class="modal-content max-w-md">
-    <div class="p-6">
-      <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editingCategory ? '编辑分类' : '新建分类'"></h2>
+       class="modal-content category-modal__container">
+    <div class="p-8 category-modal space-y-8">
+      <div class="category-modal__header">
+        <div>
+          <p class="category-modal__status" x-text="editingCategory ? '更新现有分类' : '创建一个全新分类'"></p>
+          <h2 class="category-modal__title" x-text="editingCategory ? '编辑分类' : '新建分类'"></h2>
+        </div>
+        <div class="category-preview" :style="{'--preview-color': categoryForm.color || '#4F46E5'}">
+          <div class="category-preview__icon">
+            <span x-text="categoryForm.icon || '📁'"></span>
+          </div>
+          <div class="category-preview__text">
+            <p class="category-preview__label">实时预览</p>
+            <p class="category-preview__title" x-text="categoryForm.name || '未命名分类'"></p>
+            <p class="category-preview__meta" x-text="(categoryForm.color || '#4F46E5').toUpperCase()"></p>
+          </div>
+        </div>
+      </div>
 
-      <form @submit.prevent="saveCategory" class="space-y-4">
-        <div>
-          <label class="label-modern">分类名称</label>
-          <input type="text" x-model="categoryForm.name" required
-                 class="input-modern" placeholder="工作">
-        </div>
-        <div>
-          <label class="label-modern">图标</label>
-          <input type="text" x-model="categoryForm.icon" maxlength="2"
-                 placeholder="📁"
-                 class="input-modern">
-        </div>
-        <div>
-          <label class="label-modern">颜色</label>
-          <input type="color" x-model="categoryForm.color"
-                 class="w-full h-12 rounded-xl border border-gray-200/50 cursor-pointer">
+      <form @submit.prevent="saveCategory" class="category-form space-y-8">
+        <div class="category-form__grid">
+          <div class="category-form__field category-form__field--full">
+            <div class="category-field-card">
+              <label class="label-modern">分类名称</label>
+              <input type="text" x-model="categoryForm.name" required class="input-modern" placeholder="工作">
+              <p class="category-form__hint">用于在任务列表中展示的分类标题</p>
+            </div>
+          </div>
+          <div class="category-form__field category-form__field--icon">
+            <div class="category-field-card category-field-card--tall">
+              <div class="category-field-card__header">
+                <label class="label-modern mb-0">图标</label>
+                <span class="category-field-card__meta" x-text="'共 ' + emojiPresets.length + ' 个推荐符号'"></span>
+              </div>
+              <input type="text" x-model="categoryForm.icon" maxlength="2" placeholder="📁" class="input-modern">
+              <p class="category-form__hint">推荐使用 Emoji 或 1-2 个字符的缩写</p>
+              <div class="category-icon-picker">
+                <div class="emoji-picker" role="list">
+                  <template x-for="emoji in emojiPresets" :key="emoji">
+                    <button type="button"
+                            class="emoji-picker__item"
+                            :class="categoryForm.icon === emoji ? 'emoji-picker__item--active' : ''"
+                            @click="categoryForm.icon = emoji"
+                            role="listitem">
+                      <span x-text="emoji"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="category-form__field category-form__field--color">
+            <div class="category-field-card">
+              <label class="label-modern">颜色</label>
+              <div class="category-color-picker__wrapper">
+                <input type="color" x-model="categoryForm.color" class="category-color-picker">
+                <span class="category-color-picker__badge" x-text="(categoryForm.color || '#4F46E5').toUpperCase()"></span>
+              </div>
+              <p class="category-form__hint">颜色将用于侧边栏和分类卡片的背景</p>
+            </div>
+          </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-          <button type="button" @click="closeModal()"
-                  class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-            取消
-          </button>
-          <button type="submit"
-                  class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
-            保存
-          </button>
+        <div class="category-modal__note">
+          <div class="category-modal__note-icon">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m2-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"></path>
+            </svg>
+          </div>
+          <p>统一的命名与配色可以让任务列表的数据更有层次，随时可以再次编辑来微调体验。</p>
+        </div>
+
+        <div class="category-modal__footer">
+          <button type="button" @click="closeModal()" class="category-modal__btn category-modal__btn--ghost">取消</button>
+          <button type="submit" class="category-modal__btn category-modal__btn--primary">保存</button>
         </div>
       </form>
     </div>
