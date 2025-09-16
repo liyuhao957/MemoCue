@@ -140,25 +140,30 @@
           <label class="label-modern">每N个月配置</label>
           <div class="space-y-3">
             <div>
-              <label class="text-sm text-gray-600">间隔月份数</label>
-              <input type="number" min="1" max="12" x-model="taskForm.schedule.interval"
-                     placeholder="例如: 3 表示每3个月"
-                     class="input-modern">
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-sm text-gray-600">执行日期</label>
-                <input type="number" min="1" max="31" x-model="taskForm.schedule.day"
-                       placeholder="日期 (1-31)"
-                       class="input-modern">
+              <label class="text-sm text-gray-600">间隔月份</label>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">每</span>
+                <input type="number" min="1" max="12" x-model="taskForm.schedule.interval"
+                       class="input-modern w-20">
+                <span class="text-gray-500">个月执行一次</span>
               </div>
-              <div>
-                <label class="text-sm text-gray-600">执行时间</label>
+            </div>
+            <div>
+              <label class="text-sm text-gray-600">首次执行日期和时间</label>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="date" x-model="taskForm.schedule.firstDate"
+                       class="input-modern">
                 <input type="time" x-model="taskForm.schedule.time"
                        class="input-modern">
               </div>
+              <p class="text-xs text-gray-500 mt-1">选择第一次执行的完整日期，系统将基于此计算后续周期</p>
             </div>
-            <p class="text-xs text-gray-500">例如：每3个月的15号 10:00执行（适合交房租等场景）</p>
+            <template x-if="taskForm.schedule.firstDate && taskForm.schedule.time && taskForm.schedule.interval">
+              <div class="bg-blue-50 rounded-lg p-3">
+                <p class="text-xs font-medium text-blue-800 mb-1">💡 执行计划预览</p>
+                <div class="text-xs text-blue-700 space-y-1" x-html="previewMonthlySchedule()"></div>
+              </div>
+            </template>
           </div>
         </div>
 

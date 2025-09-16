@@ -147,21 +147,49 @@ class TaskScheduler {
         );
 
       case 'monthlyInterval':
-        // 计算每N个月的调度
-        const { interval, day, time } = schedule;
-        if (!interval || !day || !time) return null;
+        // 简化版：基于首次执行日期计算
+        const { interval, firstDate, time } = schedule;
+        if (!interval || !firstDate || !time) return null;
 
         const now = new Date();
         const [hours, minutes] = time.split(':').map(Number);
-        const nextTime = new Date(now);
 
-        // 设置到指定日期和时间
-        nextTime.setDate(day);
-        nextTime.setHours(hours, minutes, 0, 0);
+        // 解析首次执行日期
+        const first = new Date(firstDate);
+        first.setHours(hours, minutes, 0, 0);
 
-        // 如果这个月的时间已经过了，移到下个间隔
+        // 从首次日期获取执行日
+        const executionDay = first.getDate();
+
+        // 如果首次执行时间还没到，就从首次开始
+        if (first > now) {
+          return first;
+        }
+
+        // 计算从首次到现在经过了多少个月
+        const monthsDiff = (now.getFullYear() - first.getFullYear()) * 12 +
+                          (now.getMonth() - first.getMonth());
+
+        // 计算当前在第几个周期
+        const currentCycle = Math.floor(monthsDiff / interval);
+
+        // 计算下一个周期的时间
+        const nextTime = new Date(first);
+        nextTime.setMonth(first.getMonth() + (currentCycle + 1) * interval);
+
+        // 处理月末日期问题（如31号在某些月份不存在）
+        if (nextTime.getDate() !== executionDay) {
+          // 如果日期变了，说明该月没有这一天，设为该月最后一天
+          nextTime.setDate(0); // 设为上个月最后一天
+        }
+
+        // 如果计算出的时间已经过了，再加一个周期
         if (nextTime <= now) {
           nextTime.setMonth(nextTime.getMonth() + interval);
+          // 再次处理月末问题
+          if (nextTime.getDate() !== executionDay) {
+            nextTime.setDate(0);
+          }
         }
 
         return nextTime;

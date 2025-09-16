@@ -35,7 +35,8 @@ function memoCueApp() {
         minute: 0,
         startHour: '',
         endHour: '',
-        interval: 1
+        interval: 1,
+        firstDate: '' // 简化：首次执行的完整日期
       },
       priority: 0,
       sound: 'default'
@@ -218,6 +219,33 @@ function memoCueApp() {
 
     formatTime(time) {
       return UIUtils.formatTime(time);
+    },
+
+    // 预览每N个月的执行计划
+    previewMonthlySchedule() {
+      const { firstDate, interval, time } = this.taskForm.schedule;
+      if (!firstDate || !interval || !time) return '';
+
+      const first = dayjs(`${firstDate} ${time}`);
+      const now = dayjs();
+      const schedules = [];
+
+      // 生成前4次的执行时间
+      for (let i = 0; i < 4; i++) {
+        const scheduleDate = first.add(i * interval, 'month');
+        const dateStr = scheduleDate.format('YYYY-MM-DD HH:mm');
+        const isNext = scheduleDate.isAfter(now) && (i === 0 || schedules[i-1].indexOf('✓') === -1);
+
+        if (scheduleDate.isBefore(now)) {
+          schedules.push(`<span class="line-through opacity-60">${dateStr}</span>`);
+        } else if (isNext) {
+          schedules.push(`<strong class="text-blue-800">${dateStr} ← 下次执行</strong>`);
+        } else {
+          schedules.push(dateStr);
+        }
+      }
+
+      return schedules.join('<br>');
     },
 
     // 重置表单

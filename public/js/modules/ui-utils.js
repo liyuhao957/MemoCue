@@ -22,7 +22,7 @@ window.UIUtils = {
         break;
       case 'monthlyInterval':
         app.taskForm.schedule.interval = 3;
-        app.taskForm.schedule.day = 15;
+        app.taskForm.schedule.firstDate = dayjs().format('YYYY-MM-DD'); // 默认今天
         app.taskForm.schedule.time = '10:00';
         break;
     }
@@ -51,7 +51,11 @@ window.UIUtils = {
       case 'monthly':
         return `每月${schedule.day}日 ${schedule.time}`;
       case 'monthlyInterval':
-        return `每${schedule.interval}个月的${schedule.day}日 ${schedule.time}`;
+        if (schedule.firstDate) {
+          const day = new Date(schedule.firstDate).getDate();
+          return `每${schedule.interval}个月的${day}号 ${schedule.time}`;
+        }
+        return `每${schedule.interval}个月`;
       case 'cron':
         return `Cron: ${schedule.expression}`;
       default:
