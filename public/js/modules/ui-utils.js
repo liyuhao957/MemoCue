@@ -71,5 +71,12 @@ window.UIUtils = {
     setTimeout(() => {
       app.message = null;
     }, 3000);
+  },
+
+  // 截断文本
+  truncateText(text, maxLength = 18) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   }
 };

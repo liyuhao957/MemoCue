@@ -250,13 +250,19 @@ function memoCueApp() {
     },
 
     closeModal() {
-      // 关闭模态框时重置对应的表单数据
-      if (this.activeModal === 'task') {
-        this.resetTaskForm();
-      } else if (this.activeModal === 'category') {
-        this.resetCategoryForm();
-      }
+      // 先记住当前模态框类型
+      const modalType = this.activeModal;
+      // 立即关闭模态框
       this.activeModal = null;
+
+      // 延迟重置表单数据，避免闪现问题
+      setTimeout(() => {
+        if (modalType === 'task') {
+          this.resetTaskForm();
+        } else if (modalType === 'category') {
+          this.resetCategoryForm();
+        }
+      }, 300); // 等待过渡动画完成
     }
   };
 }
