@@ -33,7 +33,11 @@ window.UIUtils = {
     switch (schedule.type) {
       case 'hourly':
         let hourlyText = `每小时第${schedule.minute}分钟`;
-        if (schedule.startHour !== undefined && schedule.endHour !== undefined) {
+        // 只有当startHour和endHour都有有效值时才显示时间范围
+        if (schedule.startHour !== undefined && schedule.startHour !== null &&
+            schedule.startHour !== '' &&
+            schedule.endHour !== undefined && schedule.endHour !== null &&
+            schedule.endHour !== '') {
           hourlyText += ` (${schedule.startHour}:00-${schedule.endHour}:00)`;
         }
         return hourlyText;
