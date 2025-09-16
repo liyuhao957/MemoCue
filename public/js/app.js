@@ -248,6 +248,48 @@ function memoCueApp() {
       return schedules.join('<br>');
     },
 
+    // 限制日期输入，确保年份为4位且在安全区间
+    sanitizeDateInput(fieldKey, finalize = false, event) {
+      let rawValue = event?.target?.value ?? this.taskForm.schedule[fieldKey];
+      if (!rawValue) {
+        this.taskForm.schedule[fieldKey] = rawValue;
+        return;
+      }
+
+      // 标准化分隔符并移除非法字符，仅保留数字和连字符
+      rawValue = rawValue.replace(/\//g, '-').replace(/[^\d-]/g, '');
+      const originalSegments = rawValue.split('-');
+      let [year = '', month = '', day = ''] = originalSegments;
+
+      if (year.length > 4) year = year.slice(0, 4);
+      if (month.length > 2) month = month.slice(0, 2);
+      if (day.length > 2) day = day.slice(0, 2);
+
+      if (finalize && year.length === 4) {
+        const numericYear = Math.min(Math.max(parseInt(year, 10) || 0, 1900), 2099);
+        year = numericYear.toString().padStart(4, '0');
+      }
+
+      const segmentCount = Math.max(originalSegments.length, 1);
+      let sanitized = year;
+      if (segmentCount >= 2) {
+        sanitized += `-${month}`;
+      }
+      if (segmentCount >= 3) {
+        sanitized += `-${day}`;
+      }
+
+      // 最终只保留标准长度
+      if (sanitized.length > 10) {
+        sanitized = sanitized.slice(0, 10);
+      }
+
+      this.taskForm.schedule[fieldKey] = sanitized;
+      if (event?.target) {
+        event.target.value = sanitized;
+      }
+    },
+
     // 重置表单
     resetTaskForm() {
       TaskManager.resetTaskForm(this);

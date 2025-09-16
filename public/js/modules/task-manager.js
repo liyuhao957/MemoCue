@@ -70,6 +70,9 @@ window.TaskManager = {
           schedule.time = data.schedule.time;
           schedule.day = Number(data.schedule.day);
           schedule.interval = Number(data.schedule.interval) || 1;
+          if (data.schedule.firstDate) {
+            schedule.firstDate = data.schedule.firstDate;
+          }
           break;
         case 'cron':
           schedule.type = 'cron';
@@ -143,7 +146,8 @@ window.TaskManager = {
         minute: 0,
         startHour: '',
         endHour: '',
-        interval: 1
+        interval: 1,
+        firstDate: ''
       },
       priority: 0,
       sound: 'default'
