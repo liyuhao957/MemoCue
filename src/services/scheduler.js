@@ -1,18 +1,17 @@
 /**
- * 任务调度器 - 重构版
- * 负责管理和执行定时任务
+ * 任务调度器 - 模块化重构版
+ * 整合核心调度、任务管理和任务调度功能
  * 行数限制：300行以内
  */
 
-const cron = require('node-cron');
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
-const fileStore = require('./file-store');
+const SchedulerCore = require('./scheduler-core');
+const TaskManager = require('./task-manager');
+const TaskScheduler = require('./task-scheduler');
 const logger = require('../utils/logger');
-const TimeCalculator = require('./time-calculator');
-const TaskExecutor = require('./task-executor');
-const { FILES, SCHEDULER } = require('../config/constants');
+const { SCHEDULER } = require('../config/constants');
 
 // 配置 dayjs
 dayjs.extend(utc);
@@ -20,59 +19,25 @@ dayjs.extend(timezone);
 
 class Scheduler {
   constructor() {
-    this.jobs = new Map();
-    this.timezone = process.env.TZ || SCHEDULER.CRON_TIMEZONE;
-    this.isRunning = false;
-    this.checkInterval = null;
+    // 初始化核心调度器
+    this.core = new SchedulerCore();
+    // 绑定方法到实例
+    this.checkTasks = this.checkTasks.bind(this);
+    this.loadAllTasks = this.loadAllTasks.bind(this);
   }
 
   /**
    * 启动调度器
    */
   async start() {
-    if (this.isRunning) {
-      logger.warn('Scheduler is already running');
-      return;
-    }
-
-    logger.info('Starting scheduler', { timezone: this.timezone });
-    this.isRunning = true;
-
-    await this.loadAllTasks();
-
-    // 每分钟检查一次需要执行的任务
-    this.checkInterval = setInterval(() => {
-      this.checkTasks();
-    }, 60000);
-
-    this.checkTasks();
-    logger.info('Scheduler started successfully');
+    await this.core.start(this.loadAllTasks, this.checkTasks);
   }
 
   /**
    * 停止调度器
    */
   stop() {
-    if (!this.isRunning) {
-      return;
-    }
-
-    logger.info('Stopping scheduler');
-
-    this.jobs.forEach((job, taskId) => {
-      if (job.cronJob) {
-        job.cronJob.stop();
-      }
-    });
-    this.jobs.clear();
-
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval);
-      this.checkInterval = null;
-    }
-
-    this.isRunning = false;
-    logger.info('Scheduler stopped');
+    this.core.stop();
   }
 
   /**
@@ -80,19 +45,13 @@ class Scheduler {
    */
   async loadAllTasks() {
     try {
-      const tasks = await fileStore.readJson(FILES.TASKS, []);
-      const enabledTasks = tasks.filter(task => task.enabled);
-
-      logger.info('Loading tasks', {
-        total: tasks.length,
-        enabled: enabledTasks.length
-      });
+      const enabledTasks = await TaskManager.loadAllTasks();
 
       for (const task of enabledTasks) {
         await this.scheduleTask(task);
       }
     } catch (error) {
-      logger.error('Failed to load tasks', { error: error.message });
+      logger.error('Failed to load all tasks', { error: error.message });
     }
   }
 
@@ -100,10 +59,10 @@ class Scheduler {
    * 检查需要执行的任务
    */
   async checkTasks() {
-    const now = dayjs().tz(this.timezone);
+    const jobs = this.core.getAllJobs();
 
-    for (const [taskId, job] of this.jobs) {
-      if (job.nextPushAt && dayjs(job.nextPushAt).isBefore(now)) {
+    for (const [taskId, job] of jobs) {
+      if (TaskScheduler.shouldExecuteTask(job, this.core.getTimezone())) {
         await this.executeTask(taskId);
       }
     }
@@ -119,41 +78,20 @@ class Scheduler {
         return;
       }
 
-      const nextPushAt = this.calculateNextPushTime(task);
-
-      if (!nextPushAt) {
-        logger.warn('无法计算下次推送时间', { taskId: task.id });
-        return;
-      }
-
-      const job = {
-        id: task.id,
+      const job = await TaskScheduler.scheduleTask(
         task,
-        nextPushAt,
-        createdAt: new Date()
-      };
+        this.core.getTimezone(),
+        async (taskId) => {
+          await this.executeTask(taskId);
+        }
+      );
 
-      // 对于cron类型任务，创建定时任务
-      if (task.scheduleType === 'cron' && task.scheduleValue) {
-        const cronJob = cron.schedule(task.scheduleValue, async () => {
-          await this.executeTask(task.id);
-        }, {
-          scheduled: true,
-          timezone: this.timezone
-        });
-        job.cronJob = cronJob;
+      if (job) {
+        this.core.addJob(task.id, job);
+        await TaskManager.updateTaskNextPushAt(task.id, job.nextPushAt);
       }
-
-      this.jobs.set(task.id, job);
-      await this.updateTaskNextPushAt(task.id, nextPushAt);
-
-      logger.info('任务已调度', {
-        taskId: task.id,
-        nextPushAt,
-        scheduleType: task.scheduleType
-      });
     } catch (error) {
-      logger.error('任务调度失败', {
+      logger.error('Failed to schedule task', {
         taskId: task.id,
         error: error.message
       });
@@ -164,52 +102,42 @@ class Scheduler {
    * 移除任务
    */
   removeTask(taskId) {
-    const job = this.jobs.get(taskId);
-    if (job) {
-      if (job.cronJob) {
-        job.cronJob.stop();
-      }
-      this.jobs.delete(taskId);
-      logger.info('任务已移除', { taskId });
-    }
+    this.core.removeJob(taskId);
   }
 
   /**
    * 执行任务
    */
   async executeTask(taskId) {
-    const job = this.jobs.get(taskId);
+    const job = this.core.getJob(taskId);
     if (!job) {
       logger.warn('任务不存在', { taskId });
       return;
     }
 
     try {
-      logger.info('开始执行任务', {
-        taskId,
-        title: job.task.title
-      });
-
-      // 使用TaskExecutor执行任务
-      const execution = await TaskExecutor.prepareExecution(job.task);
-      const results = await TaskExecutor.sendNotifications(execution);
-      await TaskExecutor.handleResults(
+      const result = await TaskScheduler.executeTask(
         job.task,
-        results,
-        (id) => this.updateTaskLastPushAt(id)
+        async (id) => {
+          await TaskManager.updateTaskLastPushAt(id);
+        }
       );
 
-      // 计算并更新下次执行时间
-      if (job.task.scheduleType !== 'once') {
-        const nextPushAt = this.calculateNextPushTime(job.task);
-        if (nextPushAt) {
-          job.nextPushAt = nextPushAt;
-          await this.updateTaskNextPushAt(taskId, nextPushAt);
+      if (result.success) {
+        // 计算并更新下次执行时间
+        if (job.task.scheduleType !== 'once') {
+          const nextPushAt = TaskScheduler.calculateNextPushTime(job.task);
+          if (nextPushAt) {
+            job.nextPushAt = nextPushAt;
+            await TaskManager.updateTaskNextPushAt(taskId, nextPushAt);
+          }
+        } else {
+          // 单次任务执行后禁用
+          await TaskManager.disableTask(taskId);
+          this.removeTask(taskId);
         }
       } else {
-        // 单次任务执行后禁用
-        await this.disableTask(taskId);
-        this.removeTask(taskId);
+        this.handleTaskFailure(job, result.error);
       }
     } catch (error) {
       this.handleTaskFailure(job, error);
@@ -220,146 +148,13 @@ class Scheduler {
    * 处理任务失败
    */
   handleTaskFailure(job, error) {
-    const result = TaskExecutor.handleFailure(
+    TaskScheduler.handleTaskFailure(
       job,
       error,
-      SCHEDULER.MAX_RETRIES
+      SCHEDULER.MAX_RETRIES,
+      (taskId) => this.executeTask(taskId),
+      (taskId) => this.removeTask(taskId)
     );
-
-    if (result.shouldRetry) {
-      setTimeout(() => {
-        this.executeTask(job.id);
-      }, result.delay);
-    } else {
-      this.removeTask(job.id);
-    }
-  }
-
-  /**
-   * 计算下次推送时间 - 使用TimeCalculator
-   */
-  calculateNextPushTime(task) {
-    // 兼容新旧数据格式
-    const schedule = task.schedule || { type: task.scheduleType, value: task.scheduleValue };
-    const scheduleType = schedule.type || task.scheduleType;
-
-    switch (scheduleType) {
-      case 'once':
-        const datetime = schedule.datetime || task.scheduleValue;
-        return new Date(datetime) > new Date()
-          ? new Date(datetime)
-          : null;
-
-      case 'hourly':
-        return TimeCalculator.calculateHourly(
-          schedule.minute,
-          schedule.startHour,
-          schedule.endHour
-        );
-
-      case 'daily':
-        const dailyTimes = schedule.times || (schedule.time ? [schedule.time] : []);
-        return TimeCalculator.calculateDaily(dailyTimes);
-
-      case 'weekly':
-        return TimeCalculator.calculateWeekly(
-          schedule.days || schedule.weekDays,
-          schedule.time
-        );
-
-      case 'monthly':
-        return TimeCalculator.calculateMonthly(
-          schedule.day ? [schedule.day] : schedule.days,
-          schedule.time
-        );
-
-      case 'monthlyInterval':
-        // 计算每N个月的调度
-        const { interval, day, time } = schedule;
-        if (!interval || !day || !time) return null;
-
-        const now = new Date();
-        const [hours, minutes] = time.split(':').map(Number);
-        const nextTime = new Date(now);
-
-        // 设置到指定日期和时间
-        nextTime.setDate(day);
-        nextTime.setHours(hours, minutes, 0, 0);
-
-        // 如果这个月的时间已经过了，移到下个间隔
-        if (nextTime <= now) {
-          nextTime.setMonth(nextTime.getMonth() + interval);
-        }
-
-        return nextTime;
-
-      case 'interval':
-        return TimeCalculator.calculateInterval(
-          schedule.interval || task.scheduleValue?.interval,
-          task.lastPushAt
-        );
-
-      case 'workdays':
-        return TimeCalculator.calculateWorkdays(schedule.times || task.scheduleValue?.times);
-
-      case 'weekend':
-        return TimeCalculator.calculateWeekend(schedule.times || task.scheduleValue?.times);
-
-      case 'cron':
-        return TimeCalculator.calculateCron(schedule.expression || task.scheduleValue);
-
-      case 'custom':
-        return TimeCalculator.calculateCustom(schedule.dates || task.scheduleValue?.dates);
-
-      default:
-        logger.warn('未知的调度类型', {
-          taskId: task.id,
-          scheduleType
-        });
-        return null;
-    }
-  }
-
-  /**
-   * 更新任务的下次推送时间
-   */
-  async updateTaskNextPushAt(taskId, nextPushAt) {
-    await fileStore.updateJson(FILES.TASKS, (tasks) => {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        task.nextPushAt = nextPushAt;
-        task.updatedAt = new Date().toISOString();
-      }
-      return tasks;
-    });
-  }
-
-  /**
-   * 更新任务的上次推送时间
-   */
-  async updateTaskLastPushAt(taskId) {
-    await fileStore.updateJson(FILES.TASKS, (tasks) => {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        task.lastPushAt = new Date().toISOString();
-        task.updatedAt = new Date().toISOString();
-      }
-      return tasks;
-    });
-  }
-
-  /**
-   * 禁用任务
-   */
-  async disableTask(taskId) {
-    await fileStore.updateJson(FILES.TASKS, (tasks) => {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        task.enabled = false;
-        task.updatedAt = new Date().toISOString();
-      }
-      return tasks;
-    });
   }
 
   /**
@@ -368,13 +163,7 @@ class Scheduler {
   async reload() {
     logger.info('Reloading scheduler');
 
-    this.jobs.forEach((job) => {
-      if (job.cronJob) {
-        job.cronJob.stop();
-      }
-    });
-    this.jobs.clear();
-
+    this.core.clearJobs();
     await this.loadAllTasks();
   }
 
@@ -382,21 +171,70 @@ class Scheduler {
    * 获取调度器状态
    */
   getStatus() {
-    const jobs = Array.from(this.jobs.values()).map(job => ({
-      id: job.id,
-      title: job.task.title,
-      scheduleType: job.task.scheduleType,
-      nextPushAt: job.nextPushAt,
-      enabled: job.task.enabled
-    }));
-
-    return {
-      isRunning: this.isRunning,
-      timezone: this.timezone,
-      totalJobs: this.jobs.size,
-      jobs
-    };
+    return this.core.getStatus();
   }
+
+  // 对外接口 - 委托给各模块
+  calculateNextPushTime(task) {
+    return TaskScheduler.calculateNextPushTime(task);
+  }
+
+  async updateTaskNextPushAt(taskId, nextPushAt) {
+    await TaskManager.updateTaskNextPushAt(taskId, nextPushAt);
+  }
+
+  async updateTaskLastPushAt(taskId) {
+    await TaskManager.updateTaskLastPushAt(taskId);
+  }
+
+  async disableTask(taskId) {
+    await TaskManager.disableTask(taskId);
+    this.removeTask(taskId);
+  }
+
+  async enableTask(taskId) {
+    await TaskManager.enableTask(taskId);
+    const task = await TaskManager.getTask(taskId);
+    if (task) await this.scheduleTask(task);
+  }
+
+  async getTask(taskId) {
+    return await TaskManager.getTask(taskId);
+  }
+
+  async updateTask(taskId, updates) {
+    await TaskManager.updateTask(taskId, updates);
+    const task = await TaskManager.getTask(taskId);
+    if (task) {
+      this.removeTask(taskId);
+      await this.scheduleTask(task);
+    }
+  }
+
+  async getAllTasks() {
+    return await TaskManager.getAllTasks();
+  }
+
+  async executeTaskNow(taskId) {
+    const task = await TaskManager.getTask(taskId);
+    if (!task) return { success: false, error: 'Task not found' };
+
+    return await TaskScheduler.executeTask(
+      task,
+      async (id) => await TaskManager.updateTaskLastPushAt(id)
+    );
+  }
+
+  async batchUpdateTasks(updateFn) {
+    await TaskManager.batchUpdateTasks(updateFn);
+    await this.reload();
+  }
+
+  getJob(taskId) { return this.core.getJob(taskId); }
+  getAllJobs() { return this.core.getAllJobs(); }
+  get isRunning() { return this.core.getIsRunning(); }
+  get timezone() { return this.core.getTimezone(); }
+  get jobs() { return this.core.getAllJobs(); }
 }
 
 module.exports = new Scheduler();
