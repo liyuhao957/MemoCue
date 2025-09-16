@@ -1,0 +1,56 @@
+<!-- 仪表盘内容组件 -->
+<section class="dashboard-content flex flex-col gap-8">
+  <header class="dashboard-header flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      <h2 class="text-3xl font-semibold text-slate-900">提醒面板</h2>
+      <p class="text-sm text-slate-500 mt-2">集中管理任务、分类与设备，以更紧凑的视图掌控所有推送节奏。</p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <div class="metric-pill">
+        <span class="metric-pill__value" x-text="tasks.length"></span>
+        <span class="metric-pill__label">提醒总数</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-pill__value text-emerald-500" x-text="tasks.filter(t => t.enabled).length"></span>
+        <span class="metric-pill__label">正在进行</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-pill__value text-slate-500" x-text="devices.length"></span>
+        <span class="metric-pill__label">使用设备</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="insights-grid">
+    <div class="surface-card search-card">
+      <svg class="search-card__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <input type="text"
+             x-model="searchQuery"
+             placeholder="搜索提醒..."
+             class="search-card__input">
+    </div>
+    <div class="surface-card quick-card">
+      <h3 class="quick-card__title">今日概览</h3>
+      <ul class="quick-card__list">
+        <li class="quick-card__item">
+          <span class="quick-card__label">启用中的提醒</span>
+          <span class="quick-card__value text-emerald-500" x-text="tasks.filter(t => t.enabled).length + ' 个'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="quick-card__label">待分类提醒</span>
+          <span class="quick-card__value text-blue-500" x-text="tasks.filter(t => !t.categoryId || t.categoryId === 'default').length + ' 个'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="quick-card__label">可用分类</span>
+          <span class="quick-card__value" x-text="categories.length + ' 类'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="quick-card__label">绑定设备</span>
+          <span class="quick-card__value" x-text="devices.length + ' 台'"></span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,187 @@
+<!-- 任务编辑模态框 -->
+<div x-show="activeModal === 'task'"
+     x-cloak
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="modal-backdrop">
+  <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="modal-content">
+    <div class="p-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editingTask ? '编辑提醒' : '新建提醒'"></h2>
+
+      <form @submit.prevent="saveTask" class="space-y-5">
+        <!-- 标题 -->
+        <div>
+          <label class="label-modern">标题</label>
+          <input type="text" x-model="taskForm.title" required
+                 class="input-modern" placeholder="输入提醒标题">
+        </div>
+
+        <!-- 内容 -->
+        <div>
+          <label class="label-modern">内容</label>
+          <textarea x-model="taskForm.content" rows="3"
+                    class="input-modern" placeholder="输入提醒内容（可选）"></textarea>
+        </div>
+
+        <!-- 设备和分类 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="label-modern">推送设备</label>
+            <select x-model="taskForm.deviceId" required
+                    class="select-modern">
+              <option value="">选择设备</option>
+              <template x-for="device in devices" :key="device.id">
+                <option :value="device.id" x-text="device.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="label-modern">分类</label>
+            <select x-model="taskForm.categoryId" required
+                    class="select-modern">
+              <template x-for="category in categories" :key="category.id">
+                <option :value="category.id" x-text="category.name"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+
+        <!-- 调度类型 -->
+        <div>
+          <label class="label-modern">重复类型</label>
+          <select x-model="taskForm.schedule.type"
+                  @change="onScheduleTypeChange"
+                  class="select-modern">
+            <option value="once">单次</option>
+            <option value="hourly">每小时</option>
+            <option value="daily">每天</option>
+            <option value="weekly">每周</option>
+            <option value="monthly">每月</option>
+            <option value="monthlyInterval">每N个月</option>
+            <option value="cron">Cron表达式</option>
+          </select>
+        </div>
+
+        <!-- 调度配置 -->
+        <div x-show="taskForm.schedule.type === 'once'">
+          <label class="label-modern">执行时间</label>
+          <input type="datetime-local" x-model="taskForm.schedule.datetime"
+                 class="input-modern">
+        </div>
+
+        <div x-show="taskForm.schedule.type === 'hourly'">
+          <label class="label-modern">每小时配置</label>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm text-gray-600">在每小时的第几分钟执行</label>
+              <input type="number" min="0" max="59" x-model="taskForm.schedule.minute"
+                     placeholder="分钟 (0-59)"
+                     class="input-modern">
+            </div>
+            <div>
+              <label class="text-sm text-gray-600">时间范围（可选）</label>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="number" min="0" max="23" x-model="taskForm.schedule.startHour"
+                       placeholder="开始时间 (0-23)"
+                       class="input-modern">
+                <input type="number" min="0" max="23" x-model="taskForm.schedule.endHour"
+                       placeholder="结束时间 (0-23)"
+                       class="input-modern">
+              </div>
+              <p class="text-xs text-gray-500 mt-1">留空表示全天执行</p>
+            </div>
+          </div>
+        </div>
+
+        <div x-show="taskForm.schedule.type === 'daily'">
+          <label class="label-modern">每天时间</label>
+          <input type="time" x-model="taskForm.schedule.time"
+                 class="input-modern">
+        </div>
+
+        <div x-show="taskForm.schedule.type === 'weekly'">
+          <label class="label-modern">每周时间</label>
+          <input type="time" x-model="taskForm.schedule.time"
+                 class="input-modern mb-3">
+          <div class="flex gap-2">
+            <template x-for="(day, index) in ['日', '一', '二', '三', '四', '五', '六']" :key="index">
+              <label class="flex items-center cursor-pointer">
+                <input type="checkbox" :value="index" x-model="taskForm.schedule.days"
+                       class="mr-1.5 rounded">
+                <span x-text="day" class="text-sm"></span>
+              </label>
+            </template>
+          </div>
+        </div>
+
+        <div x-show="taskForm.schedule.type === 'monthly'">
+          <label class="label-modern">每月日期和时间</label>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="number" min="1" max="31" x-model="taskForm.schedule.day"
+                   placeholder="日期 (1-31)"
+                   class="input-modern">
+            <input type="time" x-model="taskForm.schedule.time"
+                   class="input-modern">
+          </div>
+        </div>
+
+        <div x-show="taskForm.schedule.type === 'monthlyInterval'">
+          <label class="label-modern">每N个月配置</label>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm text-gray-600">间隔月份数</label>
+              <input type="number" min="1" max="12" x-model="taskForm.schedule.interval"
+                     placeholder="例如: 3 表示每3个月"
+                     class="input-modern">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm text-gray-600">执行日期</label>
+                <input type="number" min="1" max="31" x-model="taskForm.schedule.day"
+                       placeholder="日期 (1-31)"
+                       class="input-modern">
+              </div>
+              <div>
+                <label class="text-sm text-gray-600">执行时间</label>
+                <input type="time" x-model="taskForm.schedule.time"
+                       class="input-modern">
+              </div>
+            </div>
+            <p class="text-xs text-gray-500">例如：每3个月的15号 10:00执行（适合交房租等场景）</p>
+          </div>
+        </div>
+
+        <div x-show="taskForm.schedule.type === 'cron'">
+          <label class="label-modern">Cron 表达式</label>
+          <input type="text" x-model="taskForm.schedule.expression"
+                 placeholder="0 10 * * 1-5"
+                 class="input-modern">
+          <p class="text-xs text-gray-500 mt-2">格式: 分 时 日 月 周</p>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <button type="button" @click="closeModal()"
+                  class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+            取消
+          </button>
+          <button type="submit"
+                  class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
+            保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

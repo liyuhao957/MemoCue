@@ -16,600 +16,70 @@
   <div x-data="memoCueApp()" x-init="init()" class="min-h-screen relative flex flex-col">
 
     <!-- 顶部导航栏 -->
-    <nav class="navbar">
-      <div class="app-shell h-20 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="brand-badge">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-xl font-semibold text-gray-800">MemoCue</h1>
-            <p class="text-xs text-gray-500 -mt-0.5">智能提醒助手</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button @click="openModal('device')"
-                  class="btn btn-secondary hidden sm:inline-flex">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-            </svg>
-            <span class="hidden sm:inline">设备管理</span>
-          </button>
-          <button @click="openModal('device')"
-                  class="btn btn-secondary sm:hidden">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-            </svg>
-          </button>
-          <button @click="editingTask = null; openModal('task')"
-                  class="btn btn-primary">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            <span>新建提醒</span>
-          </button>
-        </div>
-      </div>
-    </nav>
+    <div id="navbar-container"></div>
 
     <!-- 主内容区 -->
     <main class="dashboard">
       <div class="app-shell">
         <div class="dashboard-layout flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(240px,300px)_1fr] lg:items-start lg:gap-10">
-          <aside class="dashboard-sidebar">
-            <div class="surface-card sidebar-panel">
-              <div class="sidebar-header flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
-                  <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                  </svg>
-                  分类
-                </h3>
-                <button @click="openModal('category')"
-                        class="text-sm text-blue-500 hover:text-blue-600 font-medium">
-                  添加
-                </button>
-              </div>
-              <ul class="space-y-1">
-                <li>
-                  <button @click="currentCategory = 'all'"
-                          class="sidebar-item"
-                          :class="currentCategory === 'all' ? 'sidebar-item-active' : ''">
-                    <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                      </svg>
-                    </div>
-                    <span class="flex-1 text-left">全部</span>
-                    <span class="category-counter" x-text="tasks.length"></span>
-                  </button>
-                </li>
-                <template x-for="category in categories" :key="category.id">
-                  <li>
-                    <div @click="currentCategory = category.id" role="button" tabindex="0"
-                         class="sidebar-item group"
-                         :class="currentCategory === category.id ? 'sidebar-item-active' : ''">
-                      <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                        <span x-text="category.icon || '📁'" class="text-lg leading-none"></span>
-                      </div>
-                      <span class="flex-1 text-left" x-text="category.name"></span>
-                      <span class="category-counter" x-text="getCategoryTaskCount(category.id)"></span>
-                      <button @click.stop="editCategory(category)"
-                              class="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-opacity">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                      </button>
-                    </div>
-                  </li>
-                </template>
-              </ul>
-            </div>
-          </aside>
+          <!-- 侧边栏 -->
+          <div id="sidebar-container"></div>
 
-          <section class="dashboard-content flex flex-col gap-8">
-            <header class="dashboard-header flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 class="text-3xl font-semibold text-slate-900">提醒面板</h2>
-                <p class="text-sm text-slate-500 mt-2">集中管理任务、分类与设备，以更紧凑的视图掌控所有推送节奏。</p>
-              </div>
-              <div class="flex flex-wrap gap-3">
-                <div class="metric-pill">
-                  <span class="metric-pill__value" x-text="tasks.length"></span>
-                  <span class="metric-pill__label">提醒总数</span>
-                </div>
-                <div class="metric-pill">
-                  <span class="metric-pill__value text-emerald-500" x-text="tasks.filter(t => t.enabled).length"></span>
-                  <span class="metric-pill__label">正在进行</span>
-                </div>
-                <div class="metric-pill">
-                  <span class="metric-pill__value text-slate-500" x-text="devices.length"></span>
-                  <span class="metric-pill__label">使用设备</span>
-                </div>
-              </div>
-            </header>
-
-            <div class="insights-grid">
-              <div class="surface-card search-card">
-                <svg class="search-card__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                <input type="text"
-                       x-model="searchQuery"
-                       placeholder="搜索提醒..."
-                       class="search-card__input">
-              </div>
-              <div class="surface-card quick-card">
-                <h3 class="quick-card__title">今日概览</h3>
-                <ul class="quick-card__list">
-                  <li class="quick-card__item">
-                    <span class="quick-card__label">启用中的提醒</span>
-                    <span class="quick-card__value text-emerald-500" x-text="tasks.filter(t => t.enabled).length + ' 个'"></span>
-                  </li>
-                  <li class="quick-card__item">
-                    <span class="quick-card__label">待分类提醒</span>
-                    <span class="quick-card__value text-blue-500" x-text="tasks.filter(t => !t.categoryId || t.categoryId === 'default').length + ' 个'"></span>
-                  </li>
-                  <li class="quick-card__item">
-                    <span class="quick-card__label">可用分类</span>
-                    <span class="quick-card__value" x-text="categories.length + ' 类'"></span>
-                  </li>
-                  <li class="quick-card__item">
-                    <span class="quick-card__label">绑定设备</span>
-                    <span class="quick-card__value" x-text="devices.length + ' 台'"></span>
-                  </li>
-                </ul>
-              </div>
+          <!-- 仪表盘内容和任务列表 -->
+          <div class="flex flex-col gap-8">
+            <div id="dashboard-content-container"></div>
+            <div id="task-list-container"></div>
             </div>
-
-            <div class="task-grid" x-show="filteredTasks.length > 0">
-              <template x-for="task in filteredTasks" :key="task.id">
-                <article class="task-item" :class="!task.enabled && 'task-item--disabled'">
-                  <div class="task-item__header">
-                    <div class="task-item__primary">
-                      <button @click="toggleTask(task.id)"
-                              class="toggle-switch"
-                              :class="task.enabled ? 'toggle-switch-on' : 'toggle-switch-off'">
-                        <span class="toggle-switch-handle"
-                              :class="task.enabled ? 'translate-x-5' : 'translate-x-0'"></span>
-                      </button>
-                      <div class="task-item__text">
-                        <h4 class="task-item__title" x-text="task.title"></h4>
-                        <p class="task-item__desc" x-text="task.content"></p>
-                      </div>
-                    </div>
-                    <div class="task-item__meta">
-                      <template x-if="task.categoryId">
-                        <span class="badge badge-primary" x-text="getCategoryName(task.categoryId)"></span>
-                      </template>
-                      <div class="task-item__actions">
-                        <button @click="testPush(task)"
-                                class="btn-icon"
-                                title="测试推送">
-                          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                          </svg>
-                        </button>
-                        <button @click="editTask(task)"
-                                class="btn-icon"
-                                title="编辑">
-                          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                          </svg>
-                        </button>
-                        <button @click="deleteTask(task.id)"
-                                class="btn-icon"
-                                title="删除">
-                          <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="task-item__timeline">
-                    <div class="task-timeline__bar"></div>
-                    <div class="task-timeline__content">
-                      <div class="task-timeline__row">
-                        <div class="task-timeline__dot"></div>
-                        <div class="task-timeline__label">计划</div>
-                        <div class="task-timeline__value" x-text="formatSchedule(task.schedule)"></div>
-                      </div>
-                      <template x-if="task.lastPushAt">
-                        <div class="task-timeline__row">
-                          <div class="task-timeline__dot"></div>
-                          <div class="task-timeline__label">上次</div>
-                          <div class="task-timeline__value" x-text="formatTime(task.lastPushAt)"></div>
-                        </div>
-                      </template>
-                      <template x-if="task.nextPushAt">
-                        <div class="task-timeline__row task-timeline__row--accent">
-                          <div class="task-timeline__dot"></div>
-                          <div class="task-timeline__label">下次</div>
-                          <div class="task-timeline__value" x-text="formatTime(task.nextPushAt)"></div>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </article>
-              </template>
-            </div>
-
-            <div x-show="filteredTasks.length === 0"
-                 x-cloak
-                 class="surface-card empty-card text-center">
-              <div class="empty-card__icon">
-                <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                </svg>
-              </div>
-              <h3 class="text-lg font-semibold text-gray-800">暂无提醒任务</h3>
-              <p class="text-gray-500">快速创建提醒，保持推送节奏有序进行。</p>
-              <button @click="editingTask = null; openModal('task')"
-                      class="btn btn-primary mx-auto">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                创建提醒
-              </button>
-            </div>
-          </section>
         </div>
       </div>
     </main>
-    <!-- 任务编辑模态框 -->
-    <div x-show="activeModal === 'task'"
-         x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="modal-backdrop">
-      <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
-           x-transition:enter="transition ease-out duration-300"
-           x-transition:enter-start="opacity-0 scale-95"
-           x-transition:enter-end="opacity-100 scale-100"
-           x-transition:leave="transition ease-in duration-200"
-           x-transition:leave-start="opacity-100 scale-100"
-           x-transition:leave-end="opacity-0 scale-95"
-           class="modal-content">
-        <div class="p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editingTask ? '编辑提醒' : '新建提醒'"></h2>
 
-          <form @submit.prevent="saveTask" class="space-y-5">
-            <!-- 标题 -->
-            <div>
-              <label class="label-modern">标题</label>
-              <input type="text" x-model="taskForm.title" required
-                     class="input-modern" placeholder="输入提醒标题">
-            </div>
-
-            <!-- 内容 -->
-            <div>
-              <label class="label-modern">内容</label>
-              <textarea x-model="taskForm.content" rows="3"
-                        class="input-modern" placeholder="输入提醒内容（可选）"></textarea>
-            </div>
-
-            <!-- 设备和分类 -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="label-modern">推送设备</label>
-                <select x-model="taskForm.deviceId" required
-                        class="select-modern">
-                  <option value="">选择设备</option>
-                  <template x-for="device in devices" :key="device.id">
-                    <option :value="device.id" x-text="device.name"></option>
-                  </template>
-                </select>
-              </div>
-              <div>
-                <label class="label-modern">分类</label>
-                <select x-model="taskForm.categoryId" required
-                        class="select-modern">
-                  <template x-for="category in categories" :key="category.id">
-                    <option :value="category.id" x-text="category.name"></option>
-                  </template>
-                </select>
-              </div>
-            </div>
-
-            <!-- 调度类型 -->
-            <div>
-              <label class="label-modern">重复类型</label>
-              <select x-model="taskForm.schedule.type"
-                      @change="onScheduleTypeChange"
-                      class="select-modern">
-                <option value="once">单次</option>
-                <option value="hourly">每小时</option>
-                <option value="daily">每天</option>
-                <option value="weekly">每周</option>
-                <option value="monthly">每月</option>
-                <option value="monthlyInterval">每N个月</option>
-                <option value="cron">Cron表达式</option>
-              </select>
-            </div>
-
-            <!-- 调度配置 -->
-            <div x-show="taskForm.schedule.type === 'once'">
-              <label class="label-modern">执行时间</label>
-              <input type="datetime-local" x-model="taskForm.schedule.datetime"
-                     class="input-modern">
-            </div>
-
-            <div x-show="taskForm.schedule.type === 'hourly'">
-              <label class="label-modern">每小时配置</label>
-              <div class="space-y-3">
-                <div>
-                  <label class="text-sm text-gray-600">在每小时的第几分钟执行</label>
-                  <input type="number" min="0" max="59" x-model="taskForm.schedule.minute"
-                         placeholder="分钟 (0-59)"
-                         class="input-modern">
-                </div>
-                <div>
-                  <label class="text-sm text-gray-600">时间范围（可选）</label>
-                  <div class="grid grid-cols-2 gap-3">
-                    <input type="number" min="0" max="23" x-model="taskForm.schedule.startHour"
-                           placeholder="开始时间 (0-23)"
-                           class="input-modern">
-                    <input type="number" min="0" max="23" x-model="taskForm.schedule.endHour"
-                           placeholder="结束时间 (0-23)"
-                           class="input-modern">
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">留空表示全天执行</p>
-                </div>
-              </div>
-            </div>
-
-            <div x-show="taskForm.schedule.type === 'daily'">
-              <label class="label-modern">每天时间</label>
-              <input type="time" x-model="taskForm.schedule.time"
-                     class="input-modern">
-            </div>
-
-            <div x-show="taskForm.schedule.type === 'weekly'">
-              <label class="label-modern">每周时间</label>
-              <input type="time" x-model="taskForm.schedule.time"
-                     class="input-modern mb-3">
-              <div class="flex gap-2">
-                <template x-for="(day, index) in ['日', '一', '二', '三', '四', '五', '六']" :key="index">
-                  <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" :value="index" x-model="taskForm.schedule.days"
-                           class="mr-1.5 rounded">
-                    <span x-text="day" class="text-sm"></span>
-                  </label>
-                </template>
-              </div>
-            </div>
-
-            <div x-show="taskForm.schedule.type === 'monthly'">
-              <label class="label-modern">每月日期和时间</label>
-              <div class="grid grid-cols-2 gap-3">
-                <input type="number" min="1" max="31" x-model="taskForm.schedule.day"
-                       placeholder="日期 (1-31)"
-                       class="input-modern">
-                <input type="time" x-model="taskForm.schedule.time"
-                       class="input-modern">
-              </div>
-            </div>
-
-            <div x-show="taskForm.schedule.type === 'monthlyInterval'">
-              <label class="label-modern">每N个月配置</label>
-              <div class="space-y-3">
-                <div>
-                  <label class="text-sm text-gray-600">间隔月份数</label>
-                  <input type="number" min="1" max="12" x-model="taskForm.schedule.interval"
-                         placeholder="例如: 3 表示每3个月"
-                         class="input-modern">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="text-sm text-gray-600">执行日期</label>
-                    <input type="number" min="1" max="31" x-model="taskForm.schedule.day"
-                           placeholder="日期 (1-31)"
-                           class="input-modern">
-                  </div>
-                  <div>
-                    <label class="text-sm text-gray-600">执行时间</label>
-                    <input type="time" x-model="taskForm.schedule.time"
-                           class="input-modern">
-                  </div>
-                </div>
-                <p class="text-xs text-gray-500">例如：每3个月的15号 10:00执行（适合交房租等场景）</p>
-              </div>
-            </div>
-
-            <div x-show="taskForm.schedule.type === 'cron'">
-              <label class="label-modern">Cron 表达式</label>
-              <input type="text" x-model="taskForm.schedule.expression"
-                     placeholder="0 10 * * 1-5"
-                     class="input-modern">
-              <p class="text-xs text-gray-500 mt-2">格式: 分 时 日 月 周</p>
-            </div>
-
-            <!-- 按钮 -->
-            <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <button type="button" @click="closeModal()"
-                      class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                取消
-              </button>
-              <button type="submit"
-                      class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
-                保存
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- 设备管理模态框 -->
-    <div x-show="activeModal === 'device'"
-         x-cloak
-         x-transition
-         class="modal-backdrop">
-      <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
-           x-transition
-           class="modal-content">
-        <div class="p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-6">设备管理</h2>
-
-          <!-- 设备列表 -->
-          <div class="space-y-3 mb-6">
-            <template x-for="device in devices" :key="device.id">
-              <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="font-medium text-gray-800" x-text="device.name"></span>
-                    <span x-show="device.isDefault" class="ml-2 badge badge-success">默认</span>
-                  </div>
-                </div>
-                <div class="flex gap-2">
-                  <button @click="testDevice(device.id)"
-                          class="text-sm text-blue-500 hover:text-blue-600 font-medium">
-                    测试
-                  </button>
-                  <button @click="deleteDevice(device.id)"
-                          class="text-sm text-red-500 hover:text-red-600 font-medium">
-                    删除
-                  </button>
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <!-- 添加设备表单 -->
-          <div class="border-t border-gray-100 pt-6">
-            <h3 class="font-semibold text-gray-800 mb-4">添加 Bark 设备</h3>
-            <form @submit.prevent="addDevice" class="space-y-4">
-              <div>
-                <label class="label-modern">设备名称</label>
-                <input type="text" x-model="deviceForm.name" required
-                       placeholder="我的 iPhone"
-                       class="input-modern">
-              </div>
-              <div>
-                <label class="label-modern">Bark 服务器</label>
-                <input type="url" x-model="deviceForm.server" required
-                       placeholder="https://api.day.app"
-                       class="input-modern">
-              </div>
-              <div>
-                <label class="label-modern">设备 Key</label>
-                <input type="text" x-model="deviceForm.key" required
-                       placeholder="你的Bark设备Key"
-                       class="input-modern">
-              </div>
-              <button type="submit"
-                      class="w-full px-4 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
-                添加设备
-              </button>
-            </form>
-          </div>
-
-          <!-- 关闭按钮 -->
-          <div class="flex justify-end mt-6 pt-4 border-t border-gray-100">
-            <button @click="closeModal()"
-                    class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-              关闭
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 分类管理模态框 -->
-    <div x-show="activeModal === 'category'"
-         x-cloak
-         x-transition
-         class="modal-backdrop">
-      <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
-           x-transition
-           class="modal-content max-w-md">
-        <div class="p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editingCategory ? '编辑分类' : '新建分类'"></h2>
-
-          <form @submit.prevent="saveCategory" class="space-y-4">
-            <div>
-              <label class="label-modern">分类名称</label>
-              <input type="text" x-model="categoryForm.name" required
-                     class="input-modern" placeholder="工作">
-            </div>
-            <div>
-              <label class="label-modern">图标</label>
-              <input type="text" x-model="categoryForm.icon" maxlength="2"
-                     placeholder="📁"
-                     class="input-modern">
-            </div>
-            <div>
-              <label class="label-modern">颜色</label>
-              <input type="color" x-model="categoryForm.color"
-                     class="w-full h-12 rounded-xl border border-gray-200/50 cursor-pointer">
-            </div>
-
-            <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <button type="button" @click="closeModal()"
-                      class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                取消
-              </button>
-              <button type="submit"
-                      class="px-6 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
-                保存
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- 模态框容器 -->
+    <div id="task-modal-container"></div>
+    <div id="device-modal-container"></div>
+    <div id="category-modal-container"></div>
 
     <!-- 消息提示 -->
-    <div x-show="message"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 translate-y-4"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 translate-y-4"
-         class="fixed bottom-6 right-6 card-modern p-4 max-w-sm z-50">
-      <div class="flex items-center gap-3">
-        <template x-if="message.type === 'success'">
-          <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-          </div>
-        </template>
-        <template x-if="message.type === 'error'">
-          <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </div>
-        </template>
-        <div>
-          <p class="font-semibold text-gray-800" x-text="message.title"></p>
-          <p class="text-sm text-gray-600" x-text="message.text"></p>
-        </div>
-      </div>
-    </div>
+    <div id="message-toast-container"></div>
 
   </div>
+
+  <!-- 组件加载器 -->
+  <script src="js/component-loader.js"></script>
 
   <!-- 引入模块化的 JavaScript 文件 -->
   <script src="js/modules/task-manager.js"></script>
   <script src="js/modules/device-manager.js"></script>
   <script src="js/modules/category-manager.js"></script>
   <script src="js/modules/ui-utils.js"></script>
+  
   <!-- 主应用文件 -->
   <script src="js/app.js"></script>
+
+  <!-- 组件加载脚本 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        // 定义组件映射
+        const components = [
+          { selector: '#navbar-container', component: 'components/navbar.html' },
+          { selector: '#sidebar-container', component: 'components/sidebar.html' },
+          { selector: '#dashboard-content-container', component: 'components/dashboard-content.html' },
+          { selector: '#task-list-container', component: 'components/task-list.html' },
+          { selector: '#task-modal-container', component: 'components/modals/task-modal.html' },
+          { selector: '#device-modal-container', component: 'components/modals/device-modal.html' },
+          { selector: '#category-modal-container', component: 'components/modals/category-modal.html' },
+          { selector: '#message-toast-container', component: 'components/message-toast.html' }
+        ];
+
+        // 批量加载并插入组件
+        await window.componentLoader.insertComponents(components);
+        
+        console.log('所有组件加载完成');
+      } catch (error) {
+        console.error('组件加载失败:', error);
+      }
+    });
+  </script>
 </body>
 </html>

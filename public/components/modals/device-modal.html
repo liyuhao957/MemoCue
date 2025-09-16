@@ -1,0 +1,79 @@
+<!-- 设备管理模态框 -->
+<div x-show="activeModal === 'device'"
+     x-cloak
+     x-transition
+     class="modal-backdrop">
+  <div @click.away="closeModal()" @keydown.escape.window="closeModal()"
+       x-transition
+       class="modal-content">
+    <div class="p-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-6">设备管理</h2>
+
+      <!-- 设备列表 -->
+      <div class="space-y-3 mb-6">
+        <template x-for="device in devices" :key="device.id">
+          <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <span class="font-medium text-gray-800" x-text="device.name"></span>
+                <span x-show="device.isDefault" class="ml-2 badge badge-success">默认</span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button @click="testDevice(device.id)"
+                      class="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                测试
+              </button>
+              <button @click="deleteDevice(device.id)"
+                      class="text-sm text-red-500 hover:text-red-600 font-medium">
+                删除
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- 添加设备表单 -->
+      <div class="border-t border-gray-100 pt-6">
+        <h3 class="font-semibold text-gray-800 mb-4">添加 Bark 设备</h3>
+        <form @submit.prevent="addDevice" class="space-y-4">
+          <div>
+            <label class="label-modern">设备名称</label>
+            <input type="text" x-model="deviceForm.name" required
+                   placeholder="我的 iPhone"
+                   class="input-modern">
+          </div>
+          <div>
+            <label class="label-modern">Bark 服务器</label>
+            <input type="url" x-model="deviceForm.server" required
+                   placeholder="https://api.day.app"
+                   class="input-modern">
+          </div>
+          <div>
+            <label class="label-modern">设备 Key</label>
+            <input type="text" x-model="deviceForm.key" required
+                   placeholder="你的Bark设备Key"
+                   class="input-modern">
+          </div>
+          <button type="submit"
+                  class="w-full px-4 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all shadow-sm hover:shadow">
+            添加设备
+          </button>
+        </form>
+      </div>
+
+      <!-- 关闭按钮 -->
+      <div class="flex justify-end mt-6 pt-4 border-t border-gray-100">
+        <button @click="closeModal()"
+                class="px-6 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<!-- 顶部导航栏组件 -->
+<nav class="navbar">
+  <div class="app-shell h-20 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="brand-badge">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-semibold text-gray-800">MemoCue</h1>
+        <p class="text-xs text-gray-500 -mt-0.5">智能提醒助手</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="openModal('device')"
+              class="btn btn-secondary hidden sm:inline-flex">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        <span class="hidden sm:inline">设备管理</span>
+      </button>
+      <button @click="openModal('device')"
+              class="btn btn-secondary sm:hidden">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+      </button>
+      <button @click="editingTask = null; openModal('task')"
+              class="btn btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        <span>新建提醒</span>
+      </button>
+    </div>
+  </div>
+</nav>
