@@ -1,5 +1,14 @@
 // 任务管理模块
 window.TaskManager = {
+  // 辅助函数：应用重复发送配置
+  applyRepeatConfig(schedule, data) {
+    if (data.schedule.enableRepeat) {
+      schedule.enableRepeat = true;
+      schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
+      schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
+    }
+  },
+
   // 切换任务状态
   async toggleTask(taskId, app) {
     try {
@@ -47,11 +56,7 @@ window.TaskManager = {
           schedule.type = 'once';
           schedule.datetime = data.schedule.datetime;
           // 添加重复发送配置
-          if (data.schedule.enableRepeat) {
-            schedule.enableRepeat = true;
-            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
-            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
-          }
+          this.applyRepeatConfig(schedule, data);
           break;
         case 'hourly':
           schedule.type = 'hourly';
@@ -67,33 +72,21 @@ window.TaskManager = {
           schedule.type = 'daily';
           schedule.time = data.schedule.time;
           // 添加重复发送配置
-          if (data.schedule.enableRepeat) {
-            schedule.enableRepeat = true;
-            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
-            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
-          }
+          this.applyRepeatConfig(schedule, data);
           break;
         case 'weekly':
           schedule.type = 'weekly';
           schedule.time = data.schedule.time;
           schedule.days = data.schedule.days.map(Number);
           // 添加重复发送配置
-          if (data.schedule.enableRepeat) {
-            schedule.enableRepeat = true;
-            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
-            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
-          }
+          this.applyRepeatConfig(schedule, data);
           break;
         case 'monthly':
           schedule.type = 'monthly';
           schedule.time = data.schedule.time;
           schedule.day = Number(data.schedule.day);
           // 添加重复发送配置
-          if (data.schedule.enableRepeat) {
-            schedule.enableRepeat = true;
-            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
-            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
-          }
+          this.applyRepeatConfig(schedule, data);
           break;
         case 'monthlyInterval':
           schedule.type = 'monthlyInterval';
@@ -104,11 +97,7 @@ window.TaskManager = {
             schedule.firstDate = data.schedule.firstDate;
           }
           // 添加重复发送配置
-          if (data.schedule.enableRepeat) {
-            schedule.enableRepeat = true;
-            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
-            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
-          }
+          this.applyRepeatConfig(schedule, data);
           break;
         case 'cron':
           schedule.type = 'cron';
