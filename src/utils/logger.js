@@ -64,12 +64,10 @@ const logger = winston.createLogger({
   ]
 });
 
-// 开发环境添加控制台输出
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: consoleFormat
-  }));
-}
+// 始终添加控制台输出
+logger.add(new winston.transports.Console({
+  format: consoleFormat
+}));
 
 // 导出日志器
 module.exports = logger;

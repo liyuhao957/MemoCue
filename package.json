@@ -4,8 +4,7 @@
   "description": "轻量级定时提醒服务",
   "main": "src/server.js",
   "scripts": {
-    "start": "NODE_ENV=production node --max-old-space-size=128 src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "nodemon src/server.js",
     "build": "npm run build:css && npm run build:js",
     "build:css": "tailwindcss -i ./public/styles.css -o ./public/styles.min.css --minify",
     "build:js": "esbuild public/js/*.js --bundle --minify --outdir=public/dist",

@@ -46,7 +46,7 @@ const errorHandler = (err, req, res, next) => {
     error: {
       code: errorCode,
       message: errorMessage,
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+      stack: err.stack
     },
     timestamp: new Date().toISOString(),
     path: req.path

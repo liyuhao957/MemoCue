@@ -206,7 +206,7 @@ async function startServer() {
     server = app.listen(PORT, () => {
       logger.info(`MemoCue server started`, {
         port: PORT,
-        env: process.env.NODE_ENV || 'development',
+        env: 'unified',
         timezone: process.env.TZ || 'Asia/Shanghai'
       });
       console.log(`
