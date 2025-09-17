@@ -11,6 +11,13 @@ const logger = require('../utils/logger');
 const { FILES, INTERVALS } = require('../config/constants');
 
 class TaskExecutor {
+  constructor() {
+    // 添加执行状态追踪器，存储正在执行重复发送的任务
+    this.repeatingSendTasks = new Map();
+    // 存储所有活动的定时器，用于清理
+    this.activeTimers = new Map();
+  }
+
   /**
    * 准备任务执行
    * @param {Object} task - 任务对象
@@ -42,9 +49,15 @@ class TaskExecutor {
    * @param {Object} execution - 执行参数
    * @returns {Array} 推送结果
    */
-  static async sendNotifications(execution) {
+  async sendNotifications(execution) {
     const { task, devices } = execution;
     const results = [];
+
+    // 检查任务是否正在执行重复发送
+    if (this.repeatingSendTasks.has(task.id)) {
+      logger.warn(`任务正在执行重复发送，跳过本次触发 - 任务ID: ${task.id}`);
+      return results;
+    }
 
     // 检查是否启用重复发送
     const enableRepeat = task.schedule?.enableRepeat &&
@@ -55,12 +68,45 @@ class TaskExecutor {
 
     logger.info(`准备推送任务 - ID: ${task.id}, 重复发送: ${enableRepeat}, 次数: ${repeatCount}, 间隔: ${repeatInterval}分钟`);
 
+    // 如果启用重复发送，标记任务正在执行
+    if (enableRepeat && repeatCount > 1) {
+      this.repeatingSendTasks.set(task.id, {
+        startTime: new Date(),
+        totalCount: repeatCount,
+        currentCount: 0,
+        interval: repeatInterval,
+        aborted: false
+      });
+    }
+
     // 执行重复发送
     for (let i = 0; i < repeatCount; i++) {
+      // 检查任务是否被中止
+      const taskStatus = this.repeatingSendTasks.get(task.id);
+      if (taskStatus && taskStatus.aborted) {
+        logger.info(`任务已被中止，停止重复发送 - 任务: ${task.id}`);
+        break;
+      }
+
       // 如果不是第一次发送，等待间隔时间
       if (i > 0) {
         logger.info(`等待 ${repeatInterval} 分钟后进行第 ${i + 1} 次重复发送 - 任务: ${task.id}`);
-        await new Promise(resolve => setTimeout(resolve, repeatInterval * 60 * 1000));
+
+        // 使用可中断的等待机制
+        await new Promise((resolve) => {
+          const timerId = setTimeout(resolve, repeatInterval * 60 * 1000);
+          // 存储定时器ID，以便清理
+          if (!this.activeTimers.has(task.id)) {
+            this.activeTimers.set(task.id, []);
+          }
+          this.activeTimers.get(task.id).push(timerId);
+        });
+      }
+
+      // 再次检查是否被中止
+      if (taskStatus && taskStatus.aborted) {
+        logger.info(`任务已被中止，停止重复发送 - 任务: ${task.id}`);
+        break;
       }
 
       logger.info(`开始第 ${i + 1}/${repeatCount} 次推送 - 任务: ${task.id}`);
@@ -135,8 +181,50 @@ class TaskExecutor {
       }
     }
 
+    // 重复发送完成后，清理执行状态和定时器
+    this.cleanupTask(task.id);
+
     logger.info(`任务推送完成 - ID: ${task.id}, 总发送: ${results.length}次`);
     return results;
+  }
+
+  /**
+   * 清理任务的执行状态和定时器
+   * @param {String} taskId - 任务ID
+   */
+  cleanupTask(taskId) {
+    // 清理重复发送状态
+    if (this.repeatingSendTasks.has(taskId)) {
+      this.repeatingSendTasks.delete(taskId);
+      logger.info(`清理任务执行状态 - ID: ${taskId}`);
+    }
+
+    // 清理所有相关定时器
+    if (this.activeTimers.has(taskId)) {
+      const timers = this.activeTimers.get(taskId);
+      timers.forEach(timerId => clearTimeout(timerId));
+      this.activeTimers.delete(taskId);
+      logger.info(`清理任务定时器 - ID: ${taskId}`);
+    }
+  }
+
+  /**
+   * 中止任务的重复发送
+   * @param {String} taskId - 任务ID
+   */
+  abortTask(taskId) {
+    const taskStatus = this.repeatingSendTasks.get(taskId);
+    if (taskStatus) {
+      taskStatus.aborted = true;
+      logger.info(`标记任务中止 - ID: ${taskId}`);
+    }
+
+    // 清理定时器，立即停止等待
+    if (this.activeTimers.has(taskId)) {
+      const timers = this.activeTimers.get(taskId);
+      timers.forEach(timerId => clearTimeout(timerId));
+      this.activeTimers.delete(taskId);
+    }
   }
 
   /**
@@ -223,4 +311,34 @@ class TaskExecutor {
   }
 }
 
-module.exports = TaskExecutor;
+// 创建单例实例
+const taskExecutor = new TaskExecutor();
+
+// 导出兼容静态方法的对象
+module.exports = {
+  // 保持静态方法接口
+  prepareExecution: TaskExecutor.prepareExecution,
+  handleFailure: TaskExecutor.handleFailure,
+  handleResults: TaskExecutor.handleResults,
+
+  // 使用实例方法，确保状态追踪
+  sendNotifications: (execution) => taskExecutor.sendNotifications(execution),
+
+  // 清理任务（用于任务删除或更新时）
+  cleanupTask: (taskId) => taskExecutor.cleanupTask(taskId),
+
+  // 中止任务的重复发送
+  abortTask: (taskId) => taskExecutor.abortTask(taskId),
+
+  // 清理所有任务（用于紧急情况）
+  clearAllTasks: () => {
+    taskExecutor.repeatingSendTasks.forEach((_, taskId) => {
+      taskExecutor.cleanupTask(taskId);
+    });
+  },
+
+  // 获取当前正在执行重复发送的任务
+  getRepeatingSendTasks: () => {
+    return Array.from(taskExecutor.repeatingSendTasks.keys());
+  }
+};

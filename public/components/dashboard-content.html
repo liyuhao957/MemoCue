@@ -42,7 +42,7 @@
       <div class="execution-logs-content">
         <template x-if="executionLogs && executionLogs.length > 0">
           <div class="space-y-2">
-            <template x-for="log in executionLogs.slice(0, 5)" :key="log.id">
+            <template x-for="log in executionLogs" :key="log.id">
               <div class="execution-log-item" :class="log.status === 'success' ? 'log-success' : 'log-failed'">
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
@@ -70,32 +70,45 @@
           </div>
         </template>
       </div>
-      <template x-if="executionLogs && executionLogs.length > 5">
-        <div class="execution-logs-footer">
-          <button @click="showAllLogs()" class="text-blue-500 hover:text-blue-600 text-sm">
-            查看全部 (<span x-text="executionLogs.length"></span>)
-          </button>
-        </div>
-      </template>
     </div>
     <div class="surface-card quick-card">
-      <h3 class="quick-card__title">今日概览</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-3">今日概览</h3>
       <ul class="quick-card__list">
         <li class="quick-card__item">
-          <span class="quick-card__label">启用中的提醒</span>
-          <span class="quick-card__value text-emerald-500" x-text="tasks.filter(t => t.enabled).length + ' 个'"></span>
+          <span class="text-sm text-gray-500">今日成功</span>
+          <span class="text-sm font-semibold text-emerald-500" x-text="todayStats.success + ' 次'"></span>
         </li>
         <li class="quick-card__item">
-          <span class="quick-card__label">待分类提醒</span>
-          <span class="quick-card__value text-blue-500" x-text="tasks.filter(t => !t.categoryId || t.categoryId === 'default').length + ' 个'"></span>
+          <span class="text-sm text-gray-500">今日失败</span>
+          <span class="text-sm font-semibold text-red-500" x-text="todayStats.failed + ' 次'"></span>
         </li>
         <li class="quick-card__item">
-          <span class="quick-card__label">可用分类</span>
-          <span class="quick-card__value" x-text="categories.length + ' 类'"></span>
+          <span class="text-sm text-gray-500">成功率</span>
+          <span class="text-sm font-semibold text-blue-500" x-text="todayStats.successRate + '%'"></span>
         </li>
         <li class="quick-card__item">
-          <span class="quick-card__label">绑定设备</span>
-          <span class="quick-card__value" x-text="devices.length + ' 台'"></span>
+          <span class="text-sm text-gray-500">活跃任务</span>
+          <span class="text-sm font-semibold text-gray-700" x-text="tasks.filter(t => t.enabled).length + ' 个'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="text-sm text-gray-500">总任务数</span>
+          <span class="text-sm font-semibold text-gray-700" x-text="tasks.length + ' 个'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="text-sm text-gray-500">绑定设备</span>
+          <span class="text-sm font-semibold text-gray-700" x-text="devices.length + ' 台'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="text-sm text-gray-500">待执行</span>
+          <span class="text-sm font-semibold text-amber-500" x-text="todayStats.pending + ' 个'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="text-sm text-gray-500">本周推送</span>
+          <span class="text-sm font-semibold text-indigo-500" x-text="todayStats.weekTotal + ' 次'"></span>
+        </li>
+        <li class="quick-card__item">
+          <span class="text-sm text-gray-500">平均耗时</span>
+          <span class="text-sm font-semibold text-purple-500" x-text="todayStats.avgTime + ' ms'"></span>
         </li>
       </ul>
     </div>

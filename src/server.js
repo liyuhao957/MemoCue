@@ -52,7 +52,14 @@ app.use(cors({
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分钟
   max: 100, // 限制100次请求
-  message: '请求过于频繁，请稍后再试',
+  handler: (req, res) => {
+    res.status(429).json({
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: '请求过于频繁，请稍后再试'
+      }
+    });
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });

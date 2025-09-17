@@ -133,7 +133,8 @@ window.TaskManager = {
         app.showMessage('success', '成功', '任务已创建');
       }
 
-      await app.loadTasks();
+      await app.loadTasks();  // 这会同时刷新任务执行记录
+      await app.loadExecutionLogs();  // 刷新发送记录面板
       app.closeModal();
       app.resetTaskForm();
     } catch (error) {
@@ -159,6 +160,9 @@ window.TaskManager = {
     try {
       await app.api(`/api/push/${task.id}`, { method: 'POST' });
       app.showMessage('success', '成功', '推送已发送');
+      // 刷新执行记录和日志
+      await app.loadTaskExecutions();
+      await app.loadExecutionLogs();
     } catch (error) {
       app.showMessage('error', '失败', error.message);
     }

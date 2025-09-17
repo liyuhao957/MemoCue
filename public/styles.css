@@ -189,23 +189,23 @@
   }
 
   .quick-card {
-    @apply px-5 py-4 flex flex-col gap-4;
+    @apply px-5 py-4 flex flex-col gap-3;
   }
 
   .quick-card__title {
-    @apply text-sm font-semibold text-slate-700;
+    @apply text-lg font-semibold text-gray-900;
   }
 
   .quick-card__list {
-    @apply space-y-3;
+    @apply space-y-2;
   }
 
   .quick-card__item {
-    @apply flex items-center justify-between text-sm text-slate-500;
+    @apply flex items-center justify-between;
   }
 
   .quick-card__value {
-    @apply font-semibold text-slate-700;
+    @apply text-sm font-semibold;
   }
 
   .input-modern {
@@ -459,7 +459,9 @@
   }
 
   .execution-logs-content {
-    @apply max-h-64 overflow-y-auto;
+    @apply overflow-y-auto;
+    max-height: 220px; /* 固定高度，约等于5个日志项 */
+    min-height: 100px; /* 最小高度确保美观 */
   }
 
   .execution-log-item {

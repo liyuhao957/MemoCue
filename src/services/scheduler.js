@@ -21,6 +21,8 @@ class Scheduler {
   constructor() {
     // 初始化核心调度器
     this.core = new SchedulerCore();
+    // 任务执行锁，防止同一任务并发执行
+    this.executingTasks = new Map();
     // 绑定方法到实例
     this.checkTasks = this.checkTasks.bind(this);
     this.loadAllTasks = this.loadAllTasks.bind(this);
@@ -102,6 +104,14 @@ class Scheduler {
    * 移除任务
    */
   removeTask(taskId) {
+    // 清理执行锁
+    this.executingTasks.delete(taskId);
+
+    // 中止正在进行的重复发送
+    const TaskExecutor = require('./task-executor');
+    TaskExecutor.abortTask(taskId);
+
+    // 从核心调度器中移除
     this.core.removeJob(taskId);
   }
 
@@ -109,11 +119,23 @@ class Scheduler {
    * 执行任务
    */
   async executeTask(taskId) {
+    // 检查任务是否正在执行
+    if (this.executingTasks.has(taskId)) {
+      logger.warn('任务正在执行中，跳过本次触发', { taskId });
+      return;
+    }
+
     const job = this.core.getJob(taskId);
     if (!job) {
       logger.warn('任务不存在', { taskId });
       return;
     }
+
+    // 标记任务开始执行
+    this.executingTasks.set(taskId, {
+      startTime: new Date(),
+      task: job.task
+    });
 
     try {
       const result = await TaskScheduler.executeTask(
@@ -141,6 +163,10 @@ class Scheduler {
       }
     } catch (error) {
       this.handleTaskFailure(job, error);
+    } finally {
+      // 移除执行锁
+      this.executingTasks.delete(taskId);
+      logger.debug('任务执行完成，释放执行锁', { taskId });
     }
   }
 
@@ -206,7 +232,9 @@ class Scheduler {
     await TaskManager.updateTask(taskId, updates);
     const task = await TaskManager.getTask(taskId);
     if (task) {
+      // 先停止旧的任务执行
       this.removeTask(taskId);
+      // 重新调度
       await this.scheduleTask(task);
     }
   }
