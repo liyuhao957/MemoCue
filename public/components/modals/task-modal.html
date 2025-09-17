@@ -178,8 +178,11 @@
                        class="input-modern">
                 <div class="weekday-picker">
                   <template x-for="(day, index) in ['日', '一', '二', '三', '四', '五', '六']" :key="index">
-                    <label class="weekday-pill">
-                      <input type="checkbox" :value="index" x-model="taskForm.schedule.days" class="weekday-pill__input">
+                    <label class="weekday-pill" @click.prevent="toggleWeekday(index)">
+                      <input type="checkbox"
+                             :checked="taskForm.schedule.days && taskForm.schedule.days.includes(index)"
+                             class="weekday-pill__input"
+                             @click.stop>
                       <span x-text="day"></span>
                     </label>
                   </template>

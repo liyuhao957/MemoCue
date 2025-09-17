@@ -184,6 +184,21 @@ function memoCueApp() {
       await TaskManager.toggleTask(taskId, this);
     },
 
+    toggleWeekday(dayIndex) {
+      // 确保days数组存在
+      if (!this.taskForm.schedule.days) {
+        this.taskForm.schedule.days = [];
+      }
+
+      // 切换选中状态
+      const index = this.taskForm.schedule.days.indexOf(dayIndex);
+      if (index > -1) {
+        this.taskForm.schedule.days.splice(index, 1);
+      } else {
+        this.taskForm.schedule.days.push(dayIndex);
+      }
+    },
+
     editTask(task) {
       TaskManager.editTask(task, this);
     },
