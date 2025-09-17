@@ -1,0 +1,22 @@
+/* 辅助工具类 */
+@layer utilities {
+  /* 文本截断 */
+  .text-ellipsis-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 玻璃态效果 */
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl;
+    @apply border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-gray-900/70 backdrop-blur-xl;
+    @apply border border-gray-700/20;
+  }
+}

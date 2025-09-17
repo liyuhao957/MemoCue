@@ -1,0 +1,28 @@
+/*
+ * MemoCue 样式主入口文件
+ * 此文件导入所有模块化的样式文件
+ * 构建时使用: tailwindcss -i ./public/styles/index.css -o ./public/styles.min.css --minify
+ */
+
+/* 子模块导入顺序：先基础、后布局、再组件、最后业务与工具 */
+@import './base/index.css';
+@import './layout/navbar.css';
+@import './layout/sidebar.css';
+@import './components/buttons.css';
+@import './components/cards.css';
+@import './components/forms.css';
+@import './components/badges.css';
+@import './components/modals.css';
+@import './modules/dashboard.css';
+@import './modules/task.css';
+@import './modules/category.css';
+@import './modules/device.css';
+@import './modules/execution.css';
+@import './utilities/animations.css';
+@import './utilities/scrollbar.css';
+@import './utilities/helpers.css';
+
+/* Tailwind CSS 基础层 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

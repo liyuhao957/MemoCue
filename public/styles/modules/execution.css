@@ -1,0 +1,37 @@
+/* 执行日志面板样式 */
+@layer components {
+  .execution-logs-panel {
+    @apply p-4 space-y-3;
+  }
+
+  .execution-logs-header {
+    @apply flex items-center justify-between pb-3 border-b border-gray-100;
+  }
+
+  .execution-logs-content {
+    @apply overflow-y-auto;
+    max-height: 220px; /* 固定高度，约等于5个日志项 */
+    min-height: 100px; /* 最小高度确保美观 */
+  }
+
+  .execution-log-item {
+    @apply p-2 rounded-lg border;
+    @apply transition-all duration-150;
+  }
+
+  .execution-log-item.log-success {
+    @apply bg-green-50 border-green-200;
+  }
+
+  .execution-log-item.log-failed {
+    @apply bg-red-50 border-red-200;
+  }
+
+  .execution-log-item:hover {
+    @apply shadow-sm;
+  }
+
+  .execution-logs-footer {
+    @apply pt-3 border-t border-gray-100 text-center;
+  }
+}

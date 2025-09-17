@@ -1,0 +1,29 @@
+/* 侧边栏样式 */
+@layer components {
+  .sidebar-panel {
+    @apply p-5 space-y-4;
+    position: sticky;
+    top: 110px;
+  }
+
+  @media (max-width: 1023px) {
+    .sidebar-panel {
+      position: static;
+    }
+  }
+
+  .sidebar-item {
+    @apply relative w-full text-left px-4 py-3 rounded-2xl transition-all duration-200 flex items-center gap-3 border border-transparent text-gray-600;
+  }
+
+  .sidebar-item:hover {
+    @apply bg-white border-gray-200 text-gray-800;
+    box-shadow: 0 14px 28px -26px rgba(15, 23, 42, 0.3);
+  }
+
+  .sidebar-item-active {
+    @apply bg-white text-blue-600;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    box-shadow: 0 22px 45px -28px rgba(37, 99, 235, 0.35);
+  }
+}

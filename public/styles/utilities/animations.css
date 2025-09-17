@@ -1,0 +1,50 @@
+/* 动画和过渡效果 */
+@layer utilities {
+  /* 实时推送样式 */
+  .log-highlight {
+    animation: highlightFade 2s ease-out;
+  }
+
+  @keyframes highlightFade {
+    0% {
+      background-color: rgba(59, 130, 246, 0.2);
+      transform: scale(1.02);
+    }
+    100% {
+      background-color: transparent;
+      transform: scale(1);
+    }
+  }
+
+  /* 连接状态指示器 */
+  .connection-connected {
+    @apply w-2 h-2 bg-green-500 rounded-full;
+    animation: pulse 2s infinite;
+  }
+
+  .connection-disconnected {
+    @apply w-2 h-2 bg-gray-400 rounded-full;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* 渐变背景动画 */
+  .bg-gradient-mesh {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}

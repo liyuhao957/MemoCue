@@ -6,7 +6,7 @@
   "scripts": {
     "start": "nodemon src/server.js",
     "build": "npm run build:css && npm run build:js",
-    "build:css": "tailwindcss -i ./public/styles.css -o ./public/styles.min.css --minify",
+    "build:css": "tailwindcss -i ./public/styles/index.css -o ./public/styles.min.css --minify --postcss",
     "build:js": "esbuild public/js/*.js --bundle --minify --outdir=public/dist",
     "data:init": "node scripts/init-data.js",
     "data:backup": "node scripts/backup.js",

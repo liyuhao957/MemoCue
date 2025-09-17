@@ -1,0 +1,179 @@
+/* 模态框样式 */
+@layer components {
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/35 backdrop-blur-sm;
+    @apply flex items-center justify-center p-4 z-50;
+  }
+
+  .modal-content {
+    @apply bg-white rounded-3xl border border-white/80;
+    @apply w-full max-h-[90vh] overflow-y-auto shadow-2xl;
+    max-width: min(820px, 92vw);
+  }
+
+  .modal-form {
+    @apply flex flex-col min-h-full bg-gradient-to-b from-white to-slate-50/60;
+  }
+
+  .modal-header {
+    @apply flex items-start justify-between gap-3 px-5 py-3 border-b border-gray-100;
+  }
+
+  .modal-title {
+    @apply text-lg font-bold text-gray-800;
+  }
+
+  .modal-subtitle {
+    @apply mt-0.5 text-xs text-gray-500 leading-relaxed max-w-2xl;
+  }
+
+  .modal-close {
+    @apply h-10 w-10 flex items-center justify-center rounded-2xl bg-gray-100 text-gray-500 transition-all duration-200;
+  }
+
+  .modal-close:hover {
+    @apply bg-gray-200 text-gray-700;
+  }
+
+  .modal-body {
+    @apply flex-1 overflow-y-auto px-5 py-2 space-y-2;
+  }
+
+  .modal-body--two-column {
+    @apply grid gap-3;
+  }
+
+  @media (min-width: 768px) {
+    .modal-body--two-column {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .modal-column {
+    @apply flex flex-col;
+  }
+
+  .modal-footer {
+    @apply flex justify-end gap-3 px-5 py-2.5 border-t border-gray-100 bg-white;
+  }
+
+  .modal-btn {
+    @apply px-6 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium;
+  }
+
+  .modal-btn--ghost {
+    @apply text-gray-600 hover:bg-gray-100;
+  }
+
+  .modal-btn--primary {
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb 0%, #4338ca 100%);
+    box-shadow: 0 20px 38px -24px rgba(37, 99, 235, 0.55);
+  }
+
+  .modal-btn--primary:hover {
+    box-shadow: 0 26px 48px -24px rgba(37, 99, 235, 0.65);
+    transform: translateY(-1px);
+  }
+
+  .modal-btn--primary:active {
+    transform: translateY(0);
+  }
+
+  /* 节和面板样式 */
+  .section-card {
+    @apply rounded-xl border border-gray-100 bg-white/95 shadow-sm p-3 space-y-2;
+    box-shadow: 0 12px 25px -20px rgba(15, 23, 42, 0.15);
+  }
+
+  .section-card--compact {
+    @apply p-2.5 space-y-1.5;
+  }
+
+  .section-title {
+    @apply text-base font-semibold text-gray-800 flex items-center gap-2;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-gray-400;
+  }
+
+  .inline-pill {
+    @apply inline-flex flex-wrap items-center gap-3 rounded-full bg-white border border-gray-200 px-4 py-2 shadow-sm;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    max-width: min(100%, 420px);
+  }
+
+  .inline-pill__prefix,
+  .inline-pill__suffix {
+    @apply text-sm text-gray-500 whitespace-nowrap;
+  }
+
+  .inline-pill__hint {
+    @apply w-full text-xs text-gray-400 border-t border-dashed border-gray-200 pt-1 mt-1 text-center;
+  }
+
+  .inline-pill__input {
+    @apply w-20 text-center border-none shadow-none bg-transparent text-gray-700 font-semibold;
+  }
+
+  .inline-pill__input:focus {
+    @apply ring-0 outline-none;
+  }
+
+  /* 调度面板样式 */
+  .schedule-panels {
+    @apply space-y-3;
+  }
+
+  .schedule-panel {
+    @apply flex flex-col gap-2 rounded-xl border border-gray-100 bg-slate-50/60 p-3;
+  }
+
+  .schedule-panel--compact {
+    @apply p-2.5 gap-2;
+  }
+
+  .panel-title {
+    @apply text-sm font-semibold text-gray-700;
+  }
+
+  .panel-note {
+    @apply text-xs text-gray-400;
+  }
+
+  .weekday-picker {
+    @apply grid gap-2;
+    grid-template-columns: repeat(7, minmax(32px, 1fr));
+    grid-column: 1 / -1;
+  }
+
+  .weekday-pill {
+    @apply cursor-pointer;
+  }
+
+  .weekday-pill span {
+    @apply flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-sm text-gray-600 transition-all duration-200;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .weekday-pill__input {
+    @apply hidden;
+  }
+
+  .weekday-pill__input:checked + span {
+    @apply border-blue-500 bg-blue-500 text-white shadow;
+  }
+
+  .schedule-preview {
+    @apply mt-3 rounded-2xl border border-blue-100 bg-blue-50/80 p-4 space-y-2;
+  }
+
+  .preview-title {
+    @apply text-sm font-semibold text-blue-600;
+  }
+
+  .preview-items {
+    @apply text-xs text-blue-500 leading-relaxed space-y-1;
+  }
+}

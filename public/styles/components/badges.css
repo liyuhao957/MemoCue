@@ -1,0 +1,26 @@
+/* 徽章样式 */
+@layer components {
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-blue-50 text-blue-600 border border-blue-200;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-600 border border-emerald-200;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.12);
+  }
+
+  .badge-warning {
+    @apply bg-amber-50 text-amber-600 border border-amber-200;
+    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.12);
+  }
+
+  .badge-danger {
+    @apply bg-rose-50 text-rose-600 border border-rose-200;
+    box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.12);
+  }
+}
