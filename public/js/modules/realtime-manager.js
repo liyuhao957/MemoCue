@@ -72,6 +72,7 @@ const RealtimeManager = {
       };
     } catch (error) {
       console.error('创建 SSE 连接失败:', error);
+      this.showConnectionStatus('disconnected');
     }
   },
 
@@ -83,6 +84,8 @@ const RealtimeManager = {
       this.isConnected = false;
       console.log('SSE 连接已断开');
     }
+
+    this.showConnectionStatus('disconnected');
   },
 
   // 处理接收到的消息
@@ -224,9 +227,25 @@ const RealtimeManager = {
   // 显示连接状态
   showConnectionStatus(status) {
     const indicator = document.getElementById('connection-indicator');
+    const statusText = document.getElementById('connection-status-text');
+
     if (indicator) {
-      indicator.className = `connection-${status}`;
-      indicator.title = status === 'connected' ? '实时连接已建立' : '实时连接已断开';
+      indicator.classList.remove('connection-connected', 'connection-disconnected');
+      indicator.classList.add(`connection-${status}`);
+
+      const title = status === 'connected'
+        ? '实时连接已建立'
+        : '实时连接未建立，可在必要时手动刷新';
+      indicator.setAttribute('aria-label', title);
+      indicator.setAttribute('title', title);
+    }
+
+    if (statusText) {
+      const text = status === 'connected' ? '实时同步正常' : '实时连接未建立';
+      statusText.textContent = text;
+
+      statusText.classList.remove('text-gray-500', 'text-red-500');
+      statusText.classList.add(status === 'connected' ? 'text-gray-500' : 'text-red-500');
     }
   },
 

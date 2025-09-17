@@ -17,6 +17,10 @@
   }
 
   /* 连接状态指示器 */
+  .connection-indicator {
+    @apply inline-block align-middle;
+  }
+
   .connection-connected {
     @apply w-2 h-2 bg-green-500 rounded-full;
     animation: pulse 2s infinite;

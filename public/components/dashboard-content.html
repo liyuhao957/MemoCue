@@ -25,18 +25,47 @@
     <!-- 发送记录面板 -->
     <div class="surface-card execution-logs-panel">
       <div class="execution-logs-header">
-        <h3 class="text-lg font-semibold text-gray-900">发送记录</h3>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
+          <h3 class="text-lg font-semibold text-gray-900">发送记录</h3>
+          <div class="flex items-center gap-2 text-xs text-gray-500" aria-live="polite">
+            <span id="connection-indicator" class="connection-indicator connection-disconnected" aria-hidden="true"></span>
+            <span id="connection-status-text">实时连接初始化中</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
           <select x-model="logsFilter" @change="loadExecutionLogs()" class="text-sm border rounded px-2 py-1">
             <option value="all">全部</option>
             <option value="success">成功</option>
             <option value="failed">失败</option>
           </select>
-          <button @click="loadExecutionLogs()" class="text-blue-500 hover:text-blue-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-          </button>
+          <div class="relative">
+            <button type="button"
+                    @click="open = !open"
+                    class="btn-icon"
+                    :class="open ? 'text-blue-600 bg-blue-50' : ''"
+                    aria-haspopup="true"
+                    :aria-expanded="open.toString()"
+                    aria-controls="logs-action-menu"
+                    title="更多操作">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </button>
+            <div x-cloak
+                 x-show="open"
+                 x-transition.opacity
+                 id="logs-action-menu"
+                 class="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
+              <button type="button"
+                      @click="open = false; loadExecutionLogs();"
+                      class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
+                手动刷新发送记录
+              </button>
+              <p class="mt-2 text-xs leading-relaxed text-gray-500">
+                仅当上方实时指示变灰或红色时再使用手动刷新。
+              </p>
+            </div>
+          </div>
         </div>
       </div>
       <div class="execution-logs-content">
