@@ -17,6 +17,11 @@ function memoCueApp() {
       weekTotal: 0,
       avgTime: 0
     },
+    executionStats: {
+      total: 0,
+      success: 0,
+      failed: 0
+    },
     logsFilter: 'all',
     currentCategory: 'all',
     searchQuery: '',
@@ -69,159 +74,56 @@ function memoCueApp() {
     // 初始化
     async init() {
       await this.loadData();
-      // 每30秒刷新一次任务列表
+
+      // 初始化实时通信（如果可用）
+      if (typeof RealtimeManager !== 'undefined') {
+        RealtimeManager.initialize(this);
+        console.log('实时推送已启用');
+      }
+
+      // 保留定时刷新作为降级方案
       setInterval(() => this.loadTasks(), 30000);
       this.activeModal = null;
     },
 
-    // 加载所有数据
+    // 委托给 DataLoader 的方法
     async loadData() {
-      try {
-        await Promise.all([
-          this.loadTasks(),  // 这里已经会调用loadTaskExecutions
-          this.loadCategories(),
-          this.loadDevices()
-        ]);
-
-        // 加载执行日志
-        await this.loadExecutionLogs();
-      } catch (error) {
-        this.showMessage('error', '加载失败', error.message);
-      }
+      return DataLoader.loadData(this);
     },
 
     // 加载任务列表
     async loadTasks() {
-      const response = await this.api('/api/tasks');
-      if (response.data) {
-        this.tasks = response.data;
-      } else {
-        this.tasks = response;
-      }
-      // 加载完任务后立即加载执行记录
-      await this.loadTaskExecutions();
+      return DataLoader.loadTasks(this);
     },
 
     // 加载分类列表
     async loadCategories() {
-      this.categories = await this.api('/api/categories');
-      // 确保有默认分类
-      if (!this.categories.find(c => c.id === 'default')) {
-        this.categories.unshift({
-          id: 'default',
-          name: '默认',
-          icon: '📋',
-          color: '#6B7280'
-        });
-      }
+      return DataLoader.loadCategories(this);
     },
 
     // 加载设备列表
     async loadDevices() {
-      this.devices = await this.api('/api/devices');
+      return DataLoader.loadDevices(this);
     },
 
     // 加载任务执行记录
     async loadTaskExecutions() {
-      try {
-        const taskIds = this.tasks.map(t => t.id);
-        if (taskIds.length === 0) return;
-
-        const executions = await this.api('/api/tasks/last-executions', {
-          method: 'POST',
-          body: { taskIds }
-        });
-
-        // 将执行记录附加到对应的任务上
-        this.tasks = this.tasks.map(task => ({
-          ...task,
-          lastExecution: executions[task.id] || null
-        }));
-      } catch (error) {
-        console.error('加载执行记录失败:', error);
-      }
+      return DataLoader.loadTaskExecutions(this);
     },
 
     // 加载执行日志
     async loadExecutionLogs() {
-      try {
-        const params = new URLSearchParams();
-        if (this.logsFilter !== 'all') {
-          params.append('status', this.logsFilter);
-        }
-        params.append('limit', '50');
-
-        const url = `/api/logs${params.toString() ? '?' + params.toString() : ''}`;
-        this.executionLogs = await this.api(url);
-
-        // 计算今日统计数据
-        this.calculateTodayStats();
-      } catch (error) {
-        console.error('加载执行日志失败:', error);
-        this.executionLogs = [];
-        this.todayStats = {
-          success: 0,
-          failed: 0,
-          successRate: 0,
-          pending: 0,
-          weekTotal: 0,
-          avgTime: 0
-        };
-      }
+      return DataLoader.loadExecutionLogs(this);
     },
 
     // 计算今日统计
     calculateTodayStats() {
-      const now = new Date();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // 本周开始日期
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-
-      // 今日日志
-      const todayLogs = this.executionLogs.filter(log => {
-        const logDate = new Date(log.timestamp);
-        logDate.setHours(0, 0, 0, 0);
-        return logDate.getTime() === today.getTime();
-      });
-
-      // 本周日志
-      const weekLogs = this.executionLogs.filter(log => {
-        const logDate = new Date(log.timestamp);
-        return logDate.getTime() >= weekStart.getTime();
-      });
-
-      const successCount = todayLogs.filter(log => log.status === 'success').length;
-      const failedCount = todayLogs.filter(log => log.status === 'failed').length;
-      const total = successCount + failedCount;
-
-      // 计算今日待执行任务数
-      const pendingCount = this.tasks.filter(task => {
-        if (!task.enabled) return false;
-        // 简单判断：如果任务是每日执行且今日还没有执行记录
-        const taskTodayLogs = todayLogs.filter(log => log.taskId === task.id);
-        return task.schedule.type === 'daily' && taskTodayLogs.length === 0;
-      }).length;
-
-      // 计算平均执行时间（模拟数据，实际应该从日志中计算）
-      const avgTime = successCount > 0 ? Math.floor(Math.random() * 200 + 100) : 0;
-
-      this.todayStats = {
-        success: successCount,
-        failed: failedCount,
-        successRate: total > 0 ? Math.round((successCount / total) * 100) : 0,
-        pending: pendingCount,
-        weekTotal: weekLogs.length,
-        avgTime: avgTime
-      };
+      return DataLoader.calculateTodayStats(this);
     },
 
     // 显示所有日志
     showAllLogs() {
-      // 这里可以打开一个模态框显示完整的日志列表
+      return DataLoader.showAllLogs(this);
       // 或者跳转到专门的日志页面
       this.showMessage('info', '功能开发中', '完整日志查看功能即将推出');
     },

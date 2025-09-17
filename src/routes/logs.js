@@ -64,4 +64,18 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
+// 获取最近的执行记录（用于任务显示最后执行状态）
+router.get('/recent', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const logs = await logStore.getLogs();
+
+    // 返回最近的执行记录
+    const recentLogs = logs.slice(0, limit);
+    res.json(recentLogs);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

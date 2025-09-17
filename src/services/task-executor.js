@@ -7,17 +7,11 @@
 const providerFactory = require('../providers/provider-factory');
 const fileStore = require('./file-store');
 const logStore = require('./log-store');
+const repeatSender = require('./repeat-sender');
 const logger = require('../utils/logger');
 const { FILES, INTERVALS } = require('../config/constants');
 
 class TaskExecutor {
-  constructor() {
-    // 添加执行状态追踪器，存储正在执行重复发送的任务
-    this.repeatingSendTasks = new Map();
-    // 存储所有活动的定时器，用于清理
-    this.activeTimers = new Map();
-  }
-
   /**
    * 准备任务执行
    * @param {Object} task - 任务对象
@@ -54,36 +48,25 @@ class TaskExecutor {
     const results = [];
 
     // 检查任务是否正在执行重复发送
-    if (this.repeatingSendTasks.has(task.id)) {
+    if (repeatSender.isTaskRepeating(task.id)) {
       logger.warn(`任务正在执行重复发送，跳过本次触发 - 任务ID: ${task.id}`);
       return results;
     }
 
-    // 检查是否启用重复发送
-    const enableRepeat = task.schedule?.enableRepeat &&
-                         task.schedule?.type !== 'hourly' &&
-                         task.schedule?.type !== 'cron';
-    const repeatCount = enableRepeat ? (Number(task.schedule.repeatCount) || 1) : 1;
-    const repeatInterval = enableRepeat ? (Number(task.schedule.repeatInterval) || 5) : 0;
+    // 获取重复发送配置
+    const { enableRepeat, repeatCount, repeatInterval } = repeatSender.getRepeatConfig(task);
 
     logger.info(`准备推送任务 - ID: ${task.id}, 重复发送: ${enableRepeat}, 次数: ${repeatCount}, 间隔: ${repeatInterval}分钟`);
 
     // 如果启用重复发送，标记任务正在执行
     if (enableRepeat && repeatCount > 1) {
-      this.repeatingSendTasks.set(task.id, {
-        startTime: new Date(),
-        totalCount: repeatCount,
-        currentCount: 0,
-        interval: repeatInterval,
-        aborted: false
-      });
+      repeatSender.markTaskStarted(task.id, repeatCount, repeatInterval);
     }
 
     // 执行重复发送
     for (let i = 0; i < repeatCount; i++) {
       // 检查任务是否被中止
-      const taskStatus = this.repeatingSendTasks.get(task.id);
-      if (taskStatus && taskStatus.aborted) {
+      if (repeatSender.isTaskAborted(task.id)) {
         logger.info(`任务已被中止，停止重复发送 - 任务: ${task.id}`);
         break;
       }
@@ -91,140 +74,104 @@ class TaskExecutor {
       // 如果不是第一次发送，等待间隔时间
       if (i > 0) {
         logger.info(`等待 ${repeatInterval} 分钟后进行第 ${i + 1} 次重复发送 - 任务: ${task.id}`);
+        await repeatSender.waitInterval(task.id, repeatInterval);
 
-        // 使用可中断的等待机制
-        await new Promise((resolve) => {
-          const timerId = setTimeout(resolve, repeatInterval * 60 * 1000);
-          // 存储定时器ID，以便清理
-          if (!this.activeTimers.has(task.id)) {
-            this.activeTimers.set(task.id, []);
-          }
-          this.activeTimers.get(task.id).push(timerId);
-        });
-      }
-
-      // 再次检查是否被中止
-      if (taskStatus && taskStatus.aborted) {
-        logger.info(`任务已被中止，停止重复发送 - 任务: ${task.id}`);
-        break;
+        // 再次检查是否被中止
+        if (repeatSender.isTaskAborted(task.id)) {
+          logger.info(`任务已被中止，停止重复发送 - 任务: ${task.id}`);
+          break;
+        }
       }
 
       logger.info(`开始第 ${i + 1}/${repeatCount} 次推送 - 任务: ${task.id}`);
 
-      for (const device of devices) {
-        try {
-          // 修复：使用正确的设备字段名称
-          const providerType = device.providerType || device.type || 'bark';
-          logger.debug(`使用推送提供者: ${providerType}, 设备: ${device.id}`);
-
-          // 获取provider实例
-          const provider = providerFactory.create(providerType);
-
-          // 将设备对象和消息传给provider
-          // provider的send方法会自行处理解密和字段映射
-          const result = await provider.send(device, {
-            title: task.title,
-            content: task.content,
-            url: task.url,
-            sound: task.sound,
-            group: task.group,
-            icon: task.icon,
-            priority: task.priority
-          });
-
-          results.push({
-            deviceId: device.id,
-            success: result.success,
-            result,
-            iteration: i + 1
-          });
-
-          // 记录执行日志
-          await logStore.recordExecution({
-            taskId: task.id,
-            taskTitle: task.title,
-            deviceId: device.id,
-            deviceName: device.name,
-            status: result.success ? 'success' : 'failed',
-            error: result.success ? null : result.error,
-            iteration: i + 1,
-            totalIterations: repeatCount
-          });
-
-          if (result.success) {
-            logger.info(`推送成功 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次`);
-          } else {
-            logger.warn(`推送失败 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次, 错误: ${result.error}`);
-          }
-        } catch (error) {
-          results.push({
-            deviceId: device.id,
-            success: false,
-            error: error.message,
-            iteration: i + 1
-          });
-
-          // 记录执行失败日志
-          await logStore.recordExecution({
-            taskId: task.id,
-            taskTitle: task.title,
-            deviceId: device.id,
-            deviceName: device.name,
-            status: 'failed',
-            error: error.message,
-            iteration: i + 1,
-            totalIterations: repeatCount
-          });
-
-          logger.error(`推送异常 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次`, error);
-        }
-      }
+      // 执行单次推送
+      const iterationResults = await this.executeSingleIteration(task, devices, i + 1, repeatCount);
+      results.push(...iterationResults);
     }
 
     // 重复发送完成后，清理执行状态和定时器
-    this.cleanupTask(task.id);
+    repeatSender.cleanupTask(task.id);
 
     logger.info(`任务推送完成 - ID: ${task.id}, 总发送: ${results.length}次`);
     return results;
   }
 
   /**
-   * 清理任务的执行状态和定时器
-   * @param {String} taskId - 任务ID
+   * 执行单次推送迭代
    */
-  cleanupTask(taskId) {
-    // 清理重复发送状态
-    if (this.repeatingSendTasks.has(taskId)) {
-      this.repeatingSendTasks.delete(taskId);
-      logger.info(`清理任务执行状态 - ID: ${taskId}`);
+  async executeSingleIteration(task, devices, iteration, totalIterations) {
+    const results = [];
+
+    for (const device of devices) {
+      try {
+        // 修复：使用正确的设备字段名称
+        const providerType = device.providerType || device.type || 'bark';
+        logger.debug(`使用推送提供者: ${providerType}, 设备: ${device.id}`);
+
+        // 获取provider实例
+        const provider = providerFactory.create(providerType);
+
+        // 将设备对象和消息传给provider
+        const result = await provider.send(device, {
+          title: task.title,
+          content: task.content,
+          url: task.url,
+          sound: task.sound,
+          group: task.group,
+          icon: task.icon,
+          priority: task.priority
+        });
+
+        results.push({
+          deviceId: device.id,
+          success: result.success,
+          result,
+          iteration
+        });
+
+        // 记录执行日志
+        await logStore.recordExecution({
+          taskId: task.id,
+          taskTitle: task.title,
+          deviceId: device.id,
+          deviceName: device.name,
+          status: result.success ? 'success' : 'failed',
+          error: result.success ? null : result.error,
+          iteration,
+          totalIterations
+        });
+
+        if (result.success) {
+          logger.info(`推送成功 - 任务: ${task.id}, 设备: ${device.name}, 第 ${iteration}/${totalIterations} 次`);
+        } else {
+          logger.warn(`推送失败 - 任务: ${task.id}, 设备: ${device.name}, 第 ${iteration}/${totalIterations} 次, 错误: ${result.error}`);
+        }
+      } catch (error) {
+        results.push({
+          deviceId: device.id,
+          success: false,
+          error: error.message,
+          iteration
+        });
+
+        // 记录执行失败日志
+        await logStore.recordExecution({
+          taskId: task.id,
+          taskTitle: task.title,
+          deviceId: device.id,
+          deviceName: device.name,
+          status: 'failed',
+          error: error.message,
+          iteration,
+          totalIterations
+        });
+
+        logger.error(`推送异常 - 任务: ${task.id}, 设备: ${device.name}, 第 ${iteration}/${totalIterations} 次`, error);
+      }
     }
 
-    // 清理所有相关定时器
-    if (this.activeTimers.has(taskId)) {
-      const timers = this.activeTimers.get(taskId);
-      timers.forEach(timerId => clearTimeout(timerId));
-      this.activeTimers.delete(taskId);
-      logger.info(`清理任务定时器 - ID: ${taskId}`);
-    }
-  }
-
-  /**
-   * 中止任务的重复发送
-   * @param {String} taskId - 任务ID
-   */
-  abortTask(taskId) {
-    const taskStatus = this.repeatingSendTasks.get(taskId);
-    if (taskStatus) {
-      taskStatus.aborted = true;
-      logger.info(`标记任务中止 - ID: ${taskId}`);
-    }
-
-    // 清理定时器，立即停止等待
-    if (this.activeTimers.has(taskId)) {
-      const timers = this.activeTimers.get(taskId);
-      timers.forEach(timerId => clearTimeout(timerId));
-      this.activeTimers.delete(taskId);
-    }
+    return results;
   }
 
   /**
@@ -324,21 +271,9 @@ module.exports = {
   // 使用实例方法，确保状态追踪
   sendNotifications: (execution) => taskExecutor.sendNotifications(execution),
 
-  // 清理任务（用于任务删除或更新时）
-  cleanupTask: (taskId) => taskExecutor.cleanupTask(taskId),
-
-  // 中止任务的重复发送
-  abortTask: (taskId) => taskExecutor.abortTask(taskId),
-
-  // 清理所有任务（用于紧急情况）
-  clearAllTasks: () => {
-    taskExecutor.repeatingSendTasks.forEach((_, taskId) => {
-      taskExecutor.cleanupTask(taskId);
-    });
-  },
-
-  // 获取当前正在执行重复发送的任务
-  getRepeatingSendTasks: () => {
-    return Array.from(taskExecutor.repeatingSendTasks.keys());
-  }
+  // 委托给 repeatSender 的方法
+  cleanupTask: (taskId) => repeatSender.cleanupTask(taskId),
+  abortTask: (taskId) => repeatSender.abortTask(taskId),
+  clearAllTasks: () => repeatSender.clearAllTasks(),
+  getRepeatingSendTasks: () => repeatSender.getRepeatingSendTasks()
 };

@@ -6,6 +6,7 @@
 const fileStore = require('./file-store');
 const logger = require('../utils/logger');
 const { FILES } = require('../config/constants');
+const sseManager = require('./sse-manager');
 
 class LogStore {
   constructor() {
@@ -46,6 +47,9 @@ class LogStore {
 
       await fileStore.writeJson(this.logsFile, logs);
       logger.debug('执行日志已记录', record);
+
+      // 实时推送日志到前端
+      sseManager.pushExecutionLog(record);
     } catch (error) {
       logger.error('记录执行日志失败', error);
     }

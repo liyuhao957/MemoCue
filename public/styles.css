@@ -1445,4 +1445,39 @@
   }
 
   /* 装饰性元素 */
+
+  /* 实时推送样式 */
+  .log-highlight {
+    animation: highlightFade 2s ease-out;
+  }
+
+  @keyframes highlightFade {
+    0% {
+      background-color: rgba(59, 130, 246, 0.2);
+      transform: scale(1.02);
+    }
+    100% {
+      background-color: transparent;
+      transform: scale(1);
+    }
+  }
+
+  /* 连接状态指示器 */
+  .connection-connected {
+    @apply w-2 h-2 bg-green-500 rounded-full;
+    animation: pulse 2s infinite;
+  }
+
+  .connection-disconnected {
+    @apply w-2 h-2 bg-gray-400 rounded-full;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
 }

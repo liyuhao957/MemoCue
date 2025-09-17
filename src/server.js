@@ -20,6 +20,7 @@ const devicesRouter = require('./routes/devices');
 const categoriesRouter = require('./routes/categories');
 const pushRouter = require('./routes/push');
 const logsRouter = require('./routes/logs');
+const sseManager = require('./services/sse-manager');
 
 // 创建 Express 应用
 const app = express();
@@ -92,6 +93,12 @@ app.get('/api/status', (req, res) => {
     description: '轻量级定时提醒服务',
     timezone: process.env.TZ || 'Asia/Shanghai'
   });
+});
+
+// SSE 实时推送端点（需要在普通路由之前注册）
+app.get('/api/events', (req, res) => {
+  logger.info('New SSE connection request');
+  sseManager.addConnection(req, res);
 });
 
 // 注册 API 路由
