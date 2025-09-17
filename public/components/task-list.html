@@ -1,15 +1,35 @@
 <!-- 任务列表组件 -->
 <div class="task-grid" x-show="filteredTasks.length > 0">
-  <template x-for="task in filteredTasks" :key="task.id">
-    <article class="task-item" :class="!task.enabled && 'task-item--disabled'">
+  <template x-for="task in sortedFilteredTasks" :key="task.id">
+    <article class="task-item" 
+             :class="[
+               !task.enabled && 'task-item--disabled',
+               dragging === task.id && 'task-item--dragging',
+               dragOver === task.id && 'task-item--drag-over'
+             ]"
+             draggable="true"
+             @dragstart="startDrag(task, $event)"
+             @dragend="endDrag($event)"
+             @dragover.prevent="dragOver = task.id"
+             @dragleave="dragOver = null"
+             @drop.prevent="handleDrop(task, $event)">
       <div class="task-item__header">
         <div class="task-item__primary">
-          <button @click="toggleTask(task.id)"
-                  class="toggle-switch"
-                  :class="task.enabled ? 'toggle-switch-on' : 'toggle-switch-off'">
-            <span class="toggle-switch-handle"
-                  :class="task.enabled ? 'translate-x-5' : 'translate-x-0'"></span>
-          </button>
+          <div class="flex items-center gap-2">
+            <!-- 拖拽手柄 -->
+            <div class="drag-handle opacity-30 hover:opacity-70 transition-opacity cursor-grab active:cursor-grabbing"
+                 title="拖拽调整顺序">
+              <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M7 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 14a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM17 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM17 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM17 14a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"></path>
+              </svg>
+            </div>
+            <button @click="toggleTask(task.id)"
+                    class="toggle-switch"
+                    :class="task.enabled ? 'toggle-switch-on' : 'toggle-switch-off'">
+              <span class="toggle-switch-handle"
+                    :class="task.enabled ? 'translate-x-5' : 'translate-x-0'"></span>
+            </button>
+          </div>
           <div class="task-item__text">
             <h4 class="task-item__title" x-text="task.title"></h4>
             <p class="task-item__desc" x-text="UIUtils.truncateText(task.content)" :title="task.content"></p>

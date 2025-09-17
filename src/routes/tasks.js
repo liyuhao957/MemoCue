@@ -48,10 +48,15 @@ router.get('/', validate('queryParams'), async (req, res, next) => {
 // 创建任务
 router.post('/', validate('task'), async (req, res, next) => {
   try {
+    // 获取当前最大的sortOrder
+    const tasks = await fileStore.readJson('tasks.json', []);
+    const maxSortOrder = Math.max(...tasks.map(t => t.sortOrder || 0), -1);
+
     const task = {
       id: uuidv4(),
       ...req.body,
       enabled: req.body.enabled !== false,
+      sortOrder: maxSortOrder + 1, // 新任务排在最后
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -215,6 +220,73 @@ router.post('/last-executions', async (req, res, next) => {
     });
 
     res.json(executions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 重新排序任务
+router.post('/reorder', async (req, res, next) => {
+  try {
+    const { draggedTaskId, targetTaskId } = req.body;
+
+    if (!draggedTaskId || !targetTaskId) {
+      return res.status(400).json({ error: '缺少必要的参数' });
+    }
+
+    await fileStore.updateJson('tasks.json', (tasks) => {
+      // 找到被拖拽的任务和目标任务
+      const draggedIndex = tasks.findIndex(t => t.id === draggedTaskId);
+      const targetIndex = tasks.findIndex(t => t.id === targetTaskId);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        throw new Error('任务不存在');
+      }
+
+      // 获取当前已排序的任务（按sortOrder排序）
+      const sortedTasks = [...tasks].sort((a, b) => {
+        if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+          return a.sortOrder - b.sortOrder;
+        }
+        if (a.sortOrder !== undefined && b.sortOrder === undefined) {
+          return -1;
+        }
+        if (a.sortOrder === undefined && b.sortOrder !== undefined) {
+          return 1;
+        }
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      // 重新计算sortOrder
+      sortedTasks.forEach((task, index) => {
+        task.sortOrder = index;
+        task.updatedAt = new Date().toISOString();
+      });
+
+      // 找到在排序后数组中的位置
+      const draggedTask = tasks.find(t => t.id === draggedTaskId);
+      const targetTask = tasks.find(t => t.id === targetTaskId);
+      
+      const draggedSortedIndex = sortedTasks.findIndex(t => t.id === draggedTaskId);
+      const targetSortedIndex = sortedTasks.findIndex(t => t.id === targetTaskId);
+
+      // 移除被拖拽的任务
+      sortedTasks.splice(draggedSortedIndex, 1);
+      
+      // 插入到目标位置
+      sortedTasks.splice(targetSortedIndex, 0, draggedTask);
+
+      // 重新分配sortOrder
+      sortedTasks.forEach((task, index) => {
+        task.sortOrder = index;
+        task.updatedAt = new Date().toISOString();
+      });
+
+      return tasks;
+    }, []);
+
+    logger.info('Tasks reordered', { draggedTaskId, targetTaskId });
+    res.json({ success: true });
   } catch (error) {
     next(error);
   }

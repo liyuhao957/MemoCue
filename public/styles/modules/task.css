@@ -64,6 +64,15 @@
     .task-item__actions {
       opacity: 1;
     }
+    
+    /* 移动端显示拖拽手柄 */
+    .drag-handle {
+      opacity: 0.3;
+    }
+    
+    .task-item:hover .drag-handle {
+      opacity: 0.6;
+    }
   }
 
   /* 时间线样式 */
@@ -114,5 +123,54 @@
 
   .task-item--disabled .task-timeline__row {
     @apply opacity-70;
+  }
+
+  /* 拖拽相关样式 */
+  .task-item {
+    user-select: none;
+    transition: all 0.2s ease;
+  }
+
+  .drag-handle {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .task-item:hover .drag-handle {
+    opacity: 0.4;
+  }
+
+  .task-item:hover .drag-handle:hover {
+    opacity: 0.8;
+  }
+
+  .task-item--dragging {
+    @apply opacity-50 rotate-2 scale-105;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .task-item--drag-over {
+    @apply border-blue-400 bg-blue-50/50;
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  .task-grid {
+    position: relative;
+  }
+
+  .drag-placeholder {
+    @apply border-2 border-dashed border-blue-300 bg-blue-50/30 rounded-3xl;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .drag-placeholder::before {
+    content: "拖放到此处";
   }
 }

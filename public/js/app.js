@@ -27,6 +27,11 @@ function memoCueApp() {
     searchQuery: '',
     message: null,
 
+    // 拖拽状态
+    dragging: null,
+    dragOver: null,
+    draggedTask: null,
+
     // 模态框状态
     activeModal: null, // 'task' | 'device' | 'category' | null
 
@@ -175,8 +180,30 @@ function memoCueApp() {
         );
       }
 
-      // 排序（最新的在前）
-      return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return filtered;
+    },
+
+    // 获取排序后的过滤任务
+    get sortedFilteredTasks() {
+      // 先获取过滤后的任务
+      const filtered = this.filteredTasks;
+      
+      // 按sortOrder排序，如果没有sortOrder则按创建时间排序
+      return filtered.sort((a, b) => {
+        // 如果两个任务都有sortOrder，按sortOrder排序
+        if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+          return a.sortOrder - b.sortOrder;
+        }
+        // 如果只有一个有sortOrder，有sortOrder的排在前面
+        if (a.sortOrder !== undefined && b.sortOrder === undefined) {
+          return -1;
+        }
+        if (a.sortOrder === undefined && b.sortOrder !== undefined) {
+          return 1;
+        }
+        // 如果都没有sortOrder，按创建时间倒序
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
     },
 
     // ===== 任务管理方法（调用模块） =====
@@ -213,6 +240,74 @@ function memoCueApp() {
 
     async testPush(task) {
       await TaskManager.testPush(task, this);
+    },
+
+    // ===== 拖拽相关方法 =====
+    startDrag(task, event) {
+      this.dragging = task.id;
+      this.draggedTask = task;
+      
+      // 设置拖拽数据
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', task.id);
+      
+      // 延迟添加拖拽样式，避免影响拖拽图像
+      setTimeout(() => {
+        this.dragging = task.id;
+      }, 0);
+    },
+
+    endDrag(event) {
+      // 清理拖拽状态
+      this.dragging = null;
+      this.dragOver = null;
+      this.draggedTask = null;
+    },
+
+    async handleDrop(targetTask, event) {
+      event.preventDefault();
+      
+      const draggedTaskId = event.dataTransfer.getData('text/plain');
+      const draggedTask = this.draggedTask;
+      
+      // 清理拖拽状态
+      this.dragging = null;
+      this.dragOver = null;
+      
+      // 如果拖拽到自己身上，不做任何操作
+      if (!draggedTask || draggedTask.id === targetTask.id) {
+        this.draggedTask = null;
+        return;
+      }
+
+      try {
+        // 调用重新排序方法
+        await this.reorderTasks(draggedTask.id, targetTask.id);
+        this.showMessage('success', '成功', '任务顺序已更新');
+      } catch (error) {
+        console.error('重新排序失败:', error);
+        this.showMessage('error', '失败', '更新任务顺序失败: ' + error.message);
+      } finally {
+        this.draggedTask = null;
+      }
+    },
+
+    async reorderTasks(draggedTaskId, targetTaskId) {
+      try {
+        // 发送重新排序请求到后端
+        await this.api(`/api/tasks/reorder`, {
+          method: 'POST',
+          body: {
+            draggedTaskId,
+            targetTaskId
+          }
+        });
+
+        // 重新加载任务列表以获取最新的排序
+        await this.loadTasks();
+      } catch (error) {
+        throw error;
+      }
     },
 
     // ===== 设备管理方法（调用模块） =====
