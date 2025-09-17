@@ -66,6 +66,11 @@ class ProviderFactory {
     this.instances = {};
     logger.info('Provider cache cleared');
   }
+
+  // 为了兼容性，添加getProvider方法作为create的别名
+  getProvider(type) {
+    return this.create(type);
+  }
 }
 
 // 导出单例

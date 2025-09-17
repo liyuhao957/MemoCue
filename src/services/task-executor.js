@@ -17,8 +17,12 @@ class TaskExecutor {
    */
   static async prepareExecution(task) {
     const devices = await fileStore.readJson(FILES.DEVICES, []);
+
+    // 兼容新旧数据格式：deviceId（单个）和 deviceIds（多个）
+    const deviceIds = task.deviceIds || (task.deviceId ? [task.deviceId] : []);
+
     const targetDevices = devices.filter(d =>
-      task.deviceIds.includes(d.id) && d.enabled
+      deviceIds.includes(d.id) && (d.enabled || d.isActive)
     );
 
     if (targetDevices.length === 0) {
@@ -41,38 +45,72 @@ class TaskExecutor {
     const { task, devices } = execution;
     const results = [];
 
-    for (const device of devices) {
-      try {
-        const provider = providerFactory.getProvider(device.type);
-        const result = await provider.send({
-          token: device.token,
-          title: task.title,
-          body: task.content,
-          url: task.url,
-          sound: task.sound,
-          group: task.group,
-          icon: task.icon,
-          server: device.server
-        });
+    // 检查是否启用重复发送
+    const enableRepeat = task.schedule?.enableRepeat &&
+                         task.schedule?.type !== 'hourly' &&
+                         task.schedule?.type !== 'cron';
+    const repeatCount = enableRepeat ? (Number(task.schedule.repeatCount) || 1) : 1;
+    const repeatInterval = enableRepeat ? (Number(task.schedule.repeatInterval) || 5) : 0;
 
-        results.push({
-          deviceId: device.id,
-          success: true,
-          result
-        });
+    logger.info(`准备推送任务 - ID: ${task.id}, 重复发送: ${enableRepeat}, 次数: ${repeatCount}, 间隔: ${repeatInterval}分钟`);
 
-        logger.info(`推送成功 - 任务: ${task.id}, 设备: ${device.name}`);
-      } catch (error) {
-        results.push({
-          deviceId: device.id,
-          success: false,
-          error: error.message
-        });
+    // 执行重复发送
+    for (let i = 0; i < repeatCount; i++) {
+      // 如果不是第一次发送，等待间隔时间
+      if (i > 0) {
+        logger.info(`等待 ${repeatInterval} 分钟后进行第 ${i + 1} 次重复发送 - 任务: ${task.id}`);
+        await new Promise(resolve => setTimeout(resolve, repeatInterval * 60 * 1000));
+      }
 
-        logger.error(`推送失败 - 任务: ${task.id}, 设备: ${device.name}`, error);
+      logger.info(`开始第 ${i + 1}/${repeatCount} 次推送 - 任务: ${task.id}`);
+
+      for (const device of devices) {
+        try {
+          // 修复：使用正确的设备字段名称
+          const providerType = device.providerType || device.type || 'bark';
+          logger.debug(`使用推送提供者: ${providerType}, 设备: ${device.id}`);
+
+          // 获取provider实例
+          const provider = providerFactory.create(providerType);
+
+          // 将设备对象和消息传给provider
+          // provider的send方法会自行处理解密和字段映射
+          const result = await provider.send(device, {
+            title: task.title,
+            content: task.content,
+            url: task.url,
+            sound: task.sound,
+            group: task.group,
+            icon: task.icon,
+            priority: task.priority
+          });
+
+          results.push({
+            deviceId: device.id,
+            success: result.success,
+            result,
+            iteration: i + 1
+          });
+
+          if (result.success) {
+            logger.info(`推送成功 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次`);
+          } else {
+            logger.warn(`推送失败 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次, 错误: ${result.error}`);
+          }
+        } catch (error) {
+          results.push({
+            deviceId: device.id,
+            success: false,
+            error: error.message,
+            iteration: i + 1
+          });
+
+          logger.error(`推送异常 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次`, error);
+        }
       }
     }
 
+    logger.info(`任务推送完成 - ID: ${task.id}, 总发送: ${results.length}次`);
     return results;
   }
 

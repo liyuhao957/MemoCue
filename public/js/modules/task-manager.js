@@ -22,7 +22,13 @@ window.TaskManager = {
       content: task.content || '',
       deviceId: task.deviceId,
       categoryId: task.categoryId,
-      schedule: { ...task.schedule },
+      schedule: {
+        ...task.schedule,
+        // 确保重复发送相关字段存在
+        enableRepeat: task.schedule.enableRepeat || false,
+        repeatCount: task.schedule.repeatCount || 1,
+        repeatInterval: task.schedule.repeatInterval || 5
+      },
       priority: task.priority || 0,
       sound: task.sound || 'default'
     };
@@ -40,6 +46,12 @@ window.TaskManager = {
         case 'once':
           schedule.type = 'once';
           schedule.datetime = data.schedule.datetime;
+          // 添加重复发送配置
+          if (data.schedule.enableRepeat) {
+            schedule.enableRepeat = true;
+            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
+            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
+          }
           break;
         case 'hourly':
           schedule.type = 'hourly';
@@ -54,16 +66,34 @@ window.TaskManager = {
         case 'daily':
           schedule.type = 'daily';
           schedule.time = data.schedule.time;
+          // 添加重复发送配置
+          if (data.schedule.enableRepeat) {
+            schedule.enableRepeat = true;
+            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
+            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
+          }
           break;
         case 'weekly':
           schedule.type = 'weekly';
           schedule.time = data.schedule.time;
           schedule.days = data.schedule.days.map(Number);
+          // 添加重复发送配置
+          if (data.schedule.enableRepeat) {
+            schedule.enableRepeat = true;
+            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
+            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
+          }
           break;
         case 'monthly':
           schedule.type = 'monthly';
           schedule.time = data.schedule.time;
           schedule.day = Number(data.schedule.day);
+          // 添加重复发送配置
+          if (data.schedule.enableRepeat) {
+            schedule.enableRepeat = true;
+            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
+            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
+          }
           break;
         case 'monthlyInterval':
           schedule.type = 'monthlyInterval';
@@ -72,6 +102,12 @@ window.TaskManager = {
           schedule.interval = Number(data.schedule.interval) || 1;
           if (data.schedule.firstDate) {
             schedule.firstDate = data.schedule.firstDate;
+          }
+          // 添加重复发送配置
+          if (data.schedule.enableRepeat) {
+            schedule.enableRepeat = true;
+            schedule.repeatCount = Number(data.schedule.repeatCount) || 1;
+            schedule.repeatInterval = Number(data.schedule.repeatInterval) || 5;
           }
           break;
         case 'cron':
@@ -147,7 +183,11 @@ window.TaskManager = {
         startHour: '',
         endHour: '',
         interval: 1,
-        firstDate: ''
+        firstDate: '',
+        // 重复发送相关字段
+        enableRepeat: false,
+        repeatCount: 1,
+        repeatInterval: 5
       },
       priority: 0,
       sound: 'default'

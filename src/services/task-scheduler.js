@@ -6,10 +6,16 @@
 
 const cron = require('node-cron');
 const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 const logger = require('../utils/logger');
 const TimeCalculator = require('./time-calculator');
 const TaskExecutor = require('./task-executor');
 const { SCHEDULER } = require('../config/constants');
+
+// 配置 dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class TaskScheduler {
   /**
@@ -226,7 +232,8 @@ class TaskScheduler {
    */
   shouldExecuteTask(job, timezone) {
     const now = dayjs().tz(timezone);
-    return job.nextPushAt && dayjs(job.nextPushAt).isBefore(now);
+    // 确保 nextPushAt 也使用相同的时区进行比较
+    return job.nextPushAt && dayjs(job.nextPushAt).tz(timezone).isBefore(now);
   }
 }
 

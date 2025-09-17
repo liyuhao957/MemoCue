@@ -5,7 +5,14 @@
  */
 
 const { parseExpression } = require('cron-parser');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 const { SCHEDULER } = require('../config/constants');
+
+// 配置 dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class TimeCalculator {
   /**
@@ -16,25 +23,25 @@ class TimeCalculator {
   static calculateDaily(times) {
     if (!times || times.length === 0) return null;
 
-    const now = new Date();
-    const today = new Date(now);
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tz = SCHEDULER.CRON_TIMEZONE;
+    const now = dayjs().tz(tz);
+    const today = now.startOf('day');
+    const tomorrow = today.add(1, 'day');
 
     const possibleTimes = [];
 
     times.forEach(time => {
       const [hours, minutes] = time.split(':').map(Number);
 
-      const todayTime = new Date(today);
-      todayTime.setHours(hours, minutes, 0, 0);
-      if (todayTime > now) {
-        possibleTimes.push(todayTime);
+      // 今天的时间
+      const todayTime = today.hour(hours).minute(minutes).second(0).millisecond(0);
+      if (todayTime.isAfter(now)) {
+        possibleTimes.push(todayTime.toDate());
       }
 
-      const tomorrowTime = new Date(tomorrow);
-      tomorrowTime.setHours(hours, minutes, 0, 0);
-      possibleTimes.push(tomorrowTime);
+      // 明天的时间
+      const tomorrowTime = tomorrow.hour(hours).minute(minutes).second(0).millisecond(0);
+      possibleTimes.push(tomorrowTime.toDate());
     });
 
     return possibleTimes.length > 0
@@ -51,16 +58,15 @@ class TimeCalculator {
   static calculateWeekly(weekDays, time) {
     if (!weekDays || weekDays.length === 0 || !time) return null;
 
-    const now = new Date();
+    const tz = SCHEDULER.CRON_TIMEZONE;
+    const now = dayjs().tz(tz);
     const [hours, minutes] = time.split(':').map(Number);
 
     for (let i = 0; i <= 7; i++) {
-      const checkDate = new Date(now);
-      checkDate.setDate(checkDate.getDate() + i);
-      checkDate.setHours(hours, minutes, 0, 0);
+      const checkDate = now.add(i, 'day').hour(hours).minute(minutes).second(0).millisecond(0);
 
-      if (weekDays.includes(checkDate.getDay()) && checkDate > now) {
-        return checkDate;
+      if (weekDays.includes(checkDate.day()) && checkDate.isAfter(now)) {
+        return checkDate.toDate();
       }
     }
 
@@ -76,30 +82,27 @@ class TimeCalculator {
   static calculateMonthly(days, time) {
     if (!days || days.length === 0 || !time) return null;
 
-    const now = new Date();
+    const tz = SCHEDULER.CRON_TIMEZONE;
+    const now = dayjs().tz(tz);
     const [hours, minutes] = time.split(':').map(Number);
 
     const possibleDates = [];
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
 
     // 检查当月
     days.forEach(day => {
-      const date = new Date(currentYear, currentMonth, day, hours, minutes, 0, 0);
-      if (date > now && date.getMonth() === currentMonth) {
-        possibleDates.push(date);
+      const date = now.date(day).hour(hours).minute(minutes).second(0).millisecond(0);
+      if (date.isAfter(now) && date.date() === day) {
+        possibleDates.push(date.toDate());
       }
     });
 
     // 检查下个月
     if (possibleDates.length === 0) {
-      const nextMonth = (currentMonth + 1) % 12;
-      const nextYear = nextMonth === 0 ? currentYear + 1 : currentYear;
-
+      const nextMonth = now.add(1, 'month').startOf('month');
       days.forEach(day => {
-        const date = new Date(nextYear, nextMonth, day, hours, minutes, 0, 0);
-        if (date.getMonth() === nextMonth) {
-          possibleDates.push(date);
+        const date = nextMonth.date(day).hour(hours).minute(minutes).second(0).millisecond(0);
+        if (date.date() === day) {
+          possibleDates.push(date.toDate());
         }
       });
     }
@@ -117,37 +120,34 @@ class TimeCalculator {
    * @returns {Date|null}
    */
   static calculateHourly(minute, startHour, endHour) {
-    const now = new Date();
-    const nextTime = new Date(now);
-
-    // 设置到指定分钟
-    nextTime.setMinutes(minute, 0, 0);
+    const tz = SCHEDULER.CRON_TIMEZONE;
+    const now = dayjs().tz(tz);
+    let nextTime = now.minute(minute).second(0).millisecond(0);
 
     // 如果当前时间已经过了这个分钟，移到下一个小时
-    if (nextTime <= now) {
-      nextTime.setHours(nextTime.getHours() + 1);
+    if (!nextTime.isAfter(now)) {
+      nextTime = nextTime.add(1, 'hour');
     }
 
     // 如果有时间范围限制
     if (startHour !== undefined && startHour !== null &&
         endHour !== undefined && endHour !== null) {
-      const currentHour = nextTime.getHours();
+      const currentHour = nextTime.hour();
 
       // 如果下次执行时间不在范围内
       if (currentHour < startHour || currentHour > endHour) {
         // 设置到下一个开始时间
         if (currentHour < startHour) {
           // 今天的开始时间
-          nextTime.setHours(startHour, minute, 0, 0);
+          nextTime = nextTime.hour(startHour).minute(minute).second(0).millisecond(0);
         } else {
           // 明天的开始时间
-          nextTime.setDate(nextTime.getDate() + 1);
-          nextTime.setHours(startHour, minute, 0, 0);
+          nextTime = nextTime.add(1, 'day').hour(startHour).minute(minute).second(0).millisecond(0);
         }
       }
     }
 
-    return nextTime;
+    return nextTime.toDate();
   }
 
   /**
@@ -174,21 +174,20 @@ class TimeCalculator {
   static calculateWorkdays(times) {
     if (!times || times.length === 0) return null;
 
-    const now = new Date();
+    const tz = SCHEDULER.CRON_TIMEZONE;
+    const now = dayjs().tz(tz);
 
     for (let i = 0; i <= 7; i++) {
-      const checkDate = new Date(now);
-      checkDate.setDate(checkDate.getDate() + i);
+      const checkDate = now.add(i, 'day').startOf('day');
 
-      const dayOfWeek = checkDate.getDay();
+      const dayOfWeek = checkDate.day();
       if (dayOfWeek >= 1 && dayOfWeek <= 5) {
         for (const time of times) {
           const [hours, minutes] = time.split(':').map(Number);
-          const dateTime = new Date(checkDate);
-          dateTime.setHours(hours, minutes, 0, 0);
+          const dateTime = checkDate.hour(hours).minute(minutes).second(0).millisecond(0);
 
-          if (dateTime > now) {
-            return dateTime;
+          if (dateTime.isAfter(now)) {
+            return dateTime.toDate();
           }
         }
       }
@@ -205,21 +204,20 @@ class TimeCalculator {
   static calculateWeekend(times) {
     if (!times || times.length === 0) return null;
 
-    const now = new Date();
+    const tz = SCHEDULER.CRON_TIMEZONE;
+    const now = dayjs().tz(tz);
 
     for (let i = 0; i <= 7; i++) {
-      const checkDate = new Date(now);
-      checkDate.setDate(checkDate.getDate() + i);
+      const checkDate = now.add(i, 'day').startOf('day');
 
-      const dayOfWeek = checkDate.getDay();
+      const dayOfWeek = checkDate.day();
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         for (const time of times) {
           const [hours, minutes] = time.split(':').map(Number);
-          const dateTime = new Date(checkDate);
-          dateTime.setHours(hours, minutes, 0, 0);
+          const dateTime = checkDate.hour(hours).minute(minutes).second(0).millisecond(0);
 
-          if (dateTime > now) {
-            return dateTime;
+          if (dateTime.isAfter(now)) {
+            return dateTime.toDate();
           }
         }
       }

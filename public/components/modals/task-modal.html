@@ -92,6 +92,30 @@
               <label class="label-modern">执行时间</label>
               <input type="datetime-local" x-model="taskForm.schedule.datetime"
                      class="input-modern">
+
+              <!-- 重复发送配置 -->
+              <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                  <input type="checkbox" x-model="taskForm.schedule.enableRepeat"
+                         id="once-enable-repeat"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                  <label for="once-enable-repeat" class="text-sm font-medium text-gray-700">启用重复发送</label>
+                </div>
+                <div x-show="taskForm.schedule.enableRepeat" class="form-grid form-grid--split">
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">发送次数（1-10次）</label>
+                    <input type="number" min="1" max="10" x-model="taskForm.schedule.repeatCount"
+                           placeholder="发送次数"
+                           class="input-modern">
+                  </div>
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">间隔时间（1-60分钟）</label>
+                    <input type="number" min="1" max="60" x-model="taskForm.schedule.repeatInterval"
+                           placeholder="间隔分钟"
+                           class="input-modern">
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="schedule-panel schedule-panel--compact" x-show="taskForm.schedule.type === 'hourly'">
@@ -121,6 +145,30 @@
               <label class="label-modern">每天时间</label>
               <input type="time" x-model="taskForm.schedule.time"
                      class="input-modern">
+
+              <!-- 重复发送配置 -->
+              <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                  <input type="checkbox" x-model="taskForm.schedule.enableRepeat"
+                         id="daily-enable-repeat"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                  <label for="daily-enable-repeat" class="text-sm font-medium text-gray-700">启用重复发送</label>
+                </div>
+                <div x-show="taskForm.schedule.enableRepeat" class="form-grid form-grid--split">
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">发送次数（1-10次）</label>
+                    <input type="number" min="1" max="10" x-model="taskForm.schedule.repeatCount"
+                           placeholder="发送次数"
+                           class="input-modern">
+                  </div>
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">间隔时间（1-60分钟）</label>
+                    <input type="number" min="1" max="60" x-model="taskForm.schedule.repeatInterval"
+                           placeholder="间隔分钟"
+                           class="input-modern">
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="schedule-panel" x-show="taskForm.schedule.type === 'weekly'">
@@ -137,6 +185,30 @@
                   </template>
                 </div>
               </div>
+
+              <!-- 重复发送配置 -->
+              <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                  <input type="checkbox" x-model="taskForm.schedule.enableRepeat"
+                         id="weekly-enable-repeat"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                  <label for="weekly-enable-repeat" class="text-sm font-medium text-gray-700">启用重复发送</label>
+                </div>
+                <div x-show="taskForm.schedule.enableRepeat" class="form-grid form-grid--split">
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">发送次数（1-10次）</label>
+                    <input type="number" min="1" max="10" x-model="taskForm.schedule.repeatCount"
+                           placeholder="发送次数"
+                           class="input-modern">
+                  </div>
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">间隔时间（1-60分钟）</label>
+                    <input type="number" min="1" max="60" x-model="taskForm.schedule.repeatInterval"
+                           placeholder="间隔分钟"
+                           class="input-modern">
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="schedule-panel" x-show="taskForm.schedule.type === 'monthly'">
@@ -147,6 +219,30 @@
                        class="input-modern">
                 <input type="time" x-model="taskForm.schedule.time"
                        class="input-modern">
+              </div>
+
+              <!-- 重复发送配置 -->
+              <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                  <input type="checkbox" x-model="taskForm.schedule.enableRepeat"
+                         id="monthly-enable-repeat"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                  <label for="monthly-enable-repeat" class="text-sm font-medium text-gray-700">启用重复发送</label>
+                </div>
+                <div x-show="taskForm.schedule.enableRepeat" class="form-grid form-grid--split">
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">发送次数（1-10次）</label>
+                    <input type="number" min="1" max="10" x-model="taskForm.schedule.repeatCount"
+                           placeholder="发送次数"
+                           class="input-modern">
+                  </div>
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">间隔时间（1-60分钟）</label>
+                    <input type="number" min="1" max="60" x-model="taskForm.schedule.repeatInterval"
+                           placeholder="间隔分钟"
+                           class="input-modern">
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -181,6 +277,30 @@
                   <div class="preview-items" x-html="previewMonthlySchedule()"></div>
                 </div>
               </template>
+
+              <!-- 重复发送配置 -->
+              <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                  <input type="checkbox" x-model="taskForm.schedule.enableRepeat"
+                         id="monthlyInterval-enable-repeat"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                  <label for="monthlyInterval-enable-repeat" class="text-sm font-medium text-gray-700">启用重复发送</label>
+                </div>
+                <div x-show="taskForm.schedule.enableRepeat" class="form-grid form-grid--split">
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">发送次数（1-10次）</label>
+                    <input type="number" min="1" max="10" x-model="taskForm.schedule.repeatCount"
+                           placeholder="发送次数"
+                           class="input-modern">
+                  </div>
+                  <div class="form-field">
+                    <label class="text-xs text-gray-600">间隔时间（1-60分钟）</label>
+                    <input type="number" min="1" max="60" x-model="taskForm.schedule.repeatInterval"
+                           placeholder="间隔分钟"
+                           class="input-modern">
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="schedule-panel" x-show="taskForm.schedule.type === 'cron'">
