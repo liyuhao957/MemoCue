@@ -15,6 +15,29 @@
 
 ---
 
+## 📸 界面预览
+
+<div align="center">
+
+### 🏠 主控制台
+智能任务卡片，实时状态更新，支持拖拽排序
+
+![主控制台](screenshots/dashboard.png)
+
+### 📱 设备管理
+多设备支持，一键测试推送连通性
+
+![设备管理](screenshots/device-management.png)
+
+### ✏️ 任务编辑
+丰富的定时选项，直观的配置界面
+
+![任务编辑](screenshots/task-editor.png)
+
+</div>
+
+---
+
 ## ✨ 主要特性
 
 ### 🎯 灵活的提醒方式
