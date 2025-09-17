@@ -19,6 +19,7 @@ const tasksRouter = require('./routes/tasks');
 const devicesRouter = require('./routes/devices');
 const categoriesRouter = require('./routes/categories');
 const pushRouter = require('./routes/push');
+const logsRouter = require('./routes/logs');
 
 // 创建 Express 应用
 const app = express();
@@ -91,6 +92,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/devices', devicesRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/push', pushRouter);
+app.use('/api/logs', logsRouter);
 
 // 导出/导入功能
 app.get('/api/export', async (req, res, next) => {

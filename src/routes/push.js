@@ -1,5 +1,6 @@
 const express = require('express');
 const fileStore = require('../services/file-store');
+const logStore = require('../services/log-store');
 const providerFactory = require('../providers/provider-factory');
 const scheduler = require('../services/scheduler');
 const { validate } = require('../middleware/validator');
@@ -80,6 +81,16 @@ router.post('/:taskId', async (req, res, next) => {
     };
 
     const result = await provider.send(device, message);
+
+    // 记录执行日志
+    await logStore.recordExecution({
+      taskId: task.id,
+      taskTitle: task.title,
+      deviceId: device.id,
+      deviceName: device.name,
+      status: result.success ? 'success' : 'failed',
+      error: result.success ? null : result.error
+    });
 
     // 更新最后推送时间
     if (result.success) {

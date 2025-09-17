@@ -66,6 +66,20 @@
               <div class="task-timeline__value" x-text="formatTime(task.nextPushAt)"></div>
             </div>
           </template>
+          <template x-if="task.lastExecution">
+            <div class="task-timeline__row"
+                 :class="task.lastExecution.status === 'success' ? 'task-timeline__row--success' : 'task-timeline__row--error'">
+              <div class="task-timeline__dot"></div>
+              <div class="task-timeline__label">最近</div>
+              <div class="task-timeline__value">
+                <span x-text="task.lastExecution.status === 'success' ? '✅ 成功' : '❌ 失败'"></span>
+                <span class="text-xs text-gray-500 ml-1" x-text="formatTime(task.lastExecution.timestamp)"></span>
+                <template x-if="task.lastExecution.error">
+                  <div class="text-xs text-red-500 mt-1" x-text="task.lastExecution.error"></div>
+                </template>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </article>

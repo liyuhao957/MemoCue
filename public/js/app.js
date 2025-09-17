@@ -8,6 +8,8 @@ function memoCueApp() {
     tasks: [],
     categories: [],
     devices: [],
+    executionLogs: [],
+    logsFilter: 'all',
     currentCategory: 'all',
     searchQuery: '',
     message: null,
@@ -72,6 +74,12 @@ function memoCueApp() {
           this.loadCategories(),
           this.loadDevices()
         ]);
+
+        // 加载任务执行记录
+        await this.loadTaskExecutions();
+
+        // 加载执行日志
+        await this.loadExecutionLogs();
       } catch (error) {
         this.showMessage('error', '加载失败', error.message);
       }
@@ -104,6 +112,51 @@ function memoCueApp() {
     // 加载设备列表
     async loadDevices() {
       this.devices = await this.api('/api/devices');
+    },
+
+    // 加载任务执行记录
+    async loadTaskExecutions() {
+      try {
+        const taskIds = this.tasks.map(t => t.id);
+        if (taskIds.length === 0) return;
+
+        const executions = await this.api('/api/tasks/last-executions', {
+          method: 'POST',
+          body: { taskIds }
+        });
+
+        // 将执行记录附加到对应的任务上
+        this.tasks = this.tasks.map(task => ({
+          ...task,
+          lastExecution: executions[task.id] || null
+        }));
+      } catch (error) {
+        console.error('加载执行记录失败:', error);
+      }
+    },
+
+    // 加载执行日志
+    async loadExecutionLogs() {
+      try {
+        const params = new URLSearchParams();
+        if (this.logsFilter !== 'all') {
+          params.append('status', this.logsFilter);
+        }
+        params.append('limit', '50');
+
+        const url = `/api/logs${params.toString() ? '?' + params.toString() : ''}`;
+        this.executionLogs = await this.api(url);
+      } catch (error) {
+        console.error('加载执行日志失败:', error);
+        this.executionLogs = [];
+      }
+    },
+
+    // 显示所有日志
+    showAllLogs() {
+      // 这里可以打开一个模态框显示完整的日志列表
+      // 或者跳转到专门的日志页面
+      this.showMessage('info', '功能开发中', '完整日志查看功能即将推出');
     },
 
     // API 请求封装

@@ -6,6 +6,7 @@
 
 const providerFactory = require('../providers/provider-factory');
 const fileStore = require('./file-store');
+const logStore = require('./log-store');
 const logger = require('../utils/logger');
 const { FILES, INTERVALS } = require('../config/constants');
 
@@ -92,6 +93,18 @@ class TaskExecutor {
             iteration: i + 1
           });
 
+          // 记录执行日志
+          await logStore.recordExecution({
+            taskId: task.id,
+            taskTitle: task.title,
+            deviceId: device.id,
+            deviceName: device.name,
+            status: result.success ? 'success' : 'failed',
+            error: result.success ? null : result.error,
+            iteration: i + 1,
+            totalIterations: repeatCount
+          });
+
           if (result.success) {
             logger.info(`推送成功 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次`);
           } else {
@@ -103,6 +116,18 @@ class TaskExecutor {
             success: false,
             error: error.message,
             iteration: i + 1
+          });
+
+          // 记录执行失败日志
+          await logStore.recordExecution({
+            taskId: task.id,
+            taskTitle: task.title,
+            deviceId: device.id,
+            deviceName: device.name,
+            status: 'failed',
+            error: error.message,
+            iteration: i + 1,
+            totalIterations: repeatCount
           });
 
           logger.error(`推送异常 - 任务: ${task.id}, 设备: ${device.name}, 第 ${i + 1}/${repeatCount} 次`, error);

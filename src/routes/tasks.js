@@ -2,6 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const fileStore = require('../services/file-store');
 const scheduler = require('../services/scheduler');
+const logStore = require('../services/log-store');
 const { validate } = require('../middleware/validator');
 const { NotFoundError } = require('../middleware/error');
 const logger = require('../utils/logger');
@@ -180,6 +181,40 @@ router.patch('/:id/toggle', async (req, res, next) => {
 
     logger.info('Task toggled', { taskId, enabled: updatedTask.enabled });
     res.json({ enabled: updatedTask.enabled });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 获取任务的最近执行记录
+router.get('/:id/last-execution', async (req, res, next) => {
+  try {
+    const { id: taskId } = req.params;
+    const lastExecution = await logStore.getLastExecutionForTask(taskId);
+
+    res.json(lastExecution);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 获取多个任务的最近执行记录
+router.post('/last-executions', async (req, res, next) => {
+  try {
+    const { taskIds } = req.body;
+
+    if (!Array.isArray(taskIds)) {
+      return res.status(400).json({ error: 'taskIds must be an array' });
+    }
+
+    const executionMap = await logStore.getLastExecutionsForTasks(taskIds);
+    const executions = {};
+
+    executionMap.forEach((value, key) => {
+      executions[key] = value;
+    });
+
+    res.json(executions);
   } catch (error) {
     next(error);
   }

@@ -421,6 +421,14 @@
     @apply bg-blue-500 border-blue-500 shadow-lg;
   }
 
+  .task-timeline__row--success .task-timeline__dot {
+    @apply bg-green-500 border-green-500;
+  }
+
+  .task-timeline__row--error .task-timeline__dot {
+    @apply bg-red-500 border-red-500;
+  }
+
   .task-timeline__label {
     @apply text-xs font-semibold text-slate-400 uppercase tracking-wider text-right;
   }
@@ -439,6 +447,40 @@
 
   .empty-card__icon {
     @apply inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50;
+  }
+
+  /* 执行日志面板样式 */
+  .execution-logs-panel {
+    @apply p-4 space-y-3;
+  }
+
+  .execution-logs-header {
+    @apply flex items-center justify-between pb-3 border-b border-gray-100;
+  }
+
+  .execution-logs-content {
+    @apply max-h-64 overflow-y-auto;
+  }
+
+  .execution-log-item {
+    @apply p-2 rounded-lg border;
+    @apply transition-all duration-150;
+  }
+
+  .execution-log-item.log-success {
+    @apply bg-green-50 border-green-200;
+  }
+
+  .execution-log-item.log-failed {
+    @apply bg-red-50 border-red-200;
+  }
+
+  .execution-log-item:hover {
+    @apply shadow-sm;
+  }
+
+  .execution-logs-footer {
+    @apply pt-3 border-t border-gray-100 text-center;
   }
 
   .modal-backdrop {

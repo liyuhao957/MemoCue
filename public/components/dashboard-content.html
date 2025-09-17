@@ -22,14 +22,61 @@
   </header>
 
   <div class="insights-grid">
-    <div class="surface-card search-card">
-      <svg class="search-card__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-      </svg>
-      <input type="text"
-             x-model="searchQuery"
-             placeholder="搜索提醒..."
-             class="search-card__input">
+    <!-- 发送记录面板 -->
+    <div class="surface-card execution-logs-panel">
+      <div class="execution-logs-header">
+        <h3 class="text-lg font-semibold text-gray-900">发送记录</h3>
+        <div class="flex items-center gap-2">
+          <select x-model="logsFilter" @change="loadExecutionLogs()" class="text-sm border rounded px-2 py-1">
+            <option value="all">全部</option>
+            <option value="success">成功</option>
+            <option value="failed">失败</option>
+          </select>
+          <button @click="loadExecutionLogs()" class="text-blue-500 hover:text-blue-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="execution-logs-content">
+        <template x-if="executionLogs && executionLogs.length > 0">
+          <div class="space-y-2">
+            <template x-for="log in executionLogs.slice(0, 5)" :key="log.id">
+              <div class="execution-log-item" :class="log.status === 'success' ? 'log-success' : 'log-failed'">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs" x-text="log.status === 'success' ? '✅' : '❌'"></span>
+                      <span class="font-medium text-sm" x-text="log.taskTitle"></span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                      <span x-text="log.deviceName"></span>
+                      <span class="mx-1">·</span>
+                      <span x-text="formatTime(log.timestamp)"></span>
+                    </div>
+                    <template x-if="log.error">
+                      <div class="text-xs text-red-500 mt-1" x-text="log.error"></div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+        <template x-if="!executionLogs || executionLogs.length === 0">
+          <div class="text-center text-gray-500 text-sm py-4">
+            暂无发送记录
+          </div>
+        </template>
+      </div>
+      <template x-if="executionLogs && executionLogs.length > 5">
+        <div class="execution-logs-footer">
+          <button @click="showAllLogs()" class="text-blue-500 hover:text-blue-600 text-sm">
+            查看全部 (<span x-text="executionLogs.length"></span>)
+          </button>
+        </div>
+      </template>
     </div>
     <div class="surface-card quick-card">
       <h3 class="quick-card__title">今日概览</h3>
