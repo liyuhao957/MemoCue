@@ -31,6 +31,8 @@ function memoCueApp() {
     dragging: null,
     dragOver: null,
     draggedTask: null,
+    showDragTip: false,
+    dragTipDismissed: false,
 
     // 模态框状态
     activeModal: null, // 'task' | 'device' | 'category' | null
@@ -89,6 +91,9 @@ function memoCueApp() {
       // 保留定时刷新作为降级方案
       setInterval(() => this.loadTasks(), 30000);
       this.activeModal = null;
+
+      // 检查是否需要显示拖拽提示
+      this.checkDragTip();
     },
 
     // 委托给 DataLoader 的方法
@@ -305,9 +310,31 @@ function memoCueApp() {
 
         // 重新加载任务列表以获取最新的排序
         await this.loadTasks();
+        
+        // 首次拖拽成功后隐藏提示
+        if (this.showDragTip) {
+          this.dismissDragTip();
+        }
       } catch (error) {
         throw error;
       }
+    },
+
+    // 检查是否需要显示拖拽提示
+    checkDragTip() {
+      const dismissed = localStorage.getItem('dragTipDismissed');
+      if (!dismissed && this.tasks.length >= 2) {
+        setTimeout(() => {
+          this.showDragTip = true;
+        }, 2000); // 2秒后显示提示
+      }
+    },
+
+    // 关闭拖拽提示
+    dismissDragTip() {
+      this.showDragTip = false;
+      this.dragTipDismissed = true;
+      localStorage.setItem('dragTipDismissed', 'true');
     },
 
     // ===== 设备管理方法（调用模块） =====

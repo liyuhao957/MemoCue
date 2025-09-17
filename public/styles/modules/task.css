@@ -67,11 +67,27 @@
     
     /* 移动端显示拖拽手柄 */
     .drag-handle {
-      opacity: 0.3;
+      opacity: 0.5;
+      background-color: rgba(59, 130, 246, 0.1);
+      transform: scale(1.1);
     }
     
-    .task-item:hover .drag-handle {
-      opacity: 0.6;
+    .task-item:hover .drag-handle,
+    .drag-handle:active {
+      opacity: 1;
+      background-color: rgba(59, 130, 246, 0.2);
+      transform: scale(1.2);
+    }
+
+    /* 移动端拖拽提示更明显 */
+    .task-item--dragging {
+      transform: rotate(8deg) scale(1.1);
+      animation: mobile-drag-wobble 0.3s ease-in-out infinite alternate;
+    }
+
+    @keyframes mobile-drag-wobble {
+      0% { transform: rotate(8deg) scale(1.1); }
+      100% { transform: rotate(6deg) scale(1.08); }
     }
   }
 
@@ -133,26 +149,101 @@
 
   .drag-handle {
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: all 0.3s ease;
+    padding: 4px;
+    border-radius: 6px;
+    position: relative;
   }
 
   .task-item:hover .drag-handle {
-    opacity: 0.4;
+    opacity: 0.6;
+    background-color: rgba(59, 130, 246, 0.1);
+    transform: scale(1.1);
   }
 
   .task-item:hover .drag-handle:hover {
-    opacity: 0.8;
+    opacity: 1;
+    background-color: rgba(59, 130, 246, 0.2);
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .drag-handle::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .task-item:hover .drag-handle:hover::after {
+    border-color: rgba(59, 130, 246, 0.4);
+    animation: pulse-border 2s infinite;
+  }
+
+  /* 拖拽提示气泡 */
+  .drag-handle:hover .drag-tooltip {
+    opacity: 1;
+    animation: tooltip-show 0.3s ease-out;
+  }
+
+  @keyframes tooltip-show {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -5px);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { 
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: scale(1);
+    }
+    50% { 
+      border-color: rgba(59, 130, 246, 0.7);
+      transform: scale(1.05);
+    }
   }
 
   .task-item--dragging {
-    @apply opacity-50 rotate-2 scale-105;
+    @apply opacity-60;
     z-index: 1000;
     pointer-events: none;
+    transform: rotate(5deg) scale(1.08);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+    border: 2px solid rgba(59, 130, 246, 0.6);
+    animation: drag-wobble 0.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes drag-wobble {
+    0% { transform: rotate(5deg) scale(1.08); }
+    100% { transform: rotate(3deg) scale(1.06); }
   }
 
   .task-item--drag-over {
-    @apply border-blue-400 bg-blue-50/50;
-    transform: translateY(-3px) scale(1.02);
+    @apply border-blue-400 bg-blue-50/70;
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
+    animation: drop-zone-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes drop-zone-pulse {
+    0%, 100% { 
+      background-color: rgba(219, 234, 254, 0.7);
+      border-color: rgb(96, 165, 250);
+    }
+    50% { 
+      background-color: rgba(147, 197, 253, 0.8);
+      border-color: rgb(59, 130, 246);
+    }
   }
 
   .task-grid {
@@ -160,17 +251,40 @@
   }
 
   .drag-placeholder {
-    @apply border-2 border-dashed border-blue-300 bg-blue-50/30 rounded-3xl;
+    @apply border-2 border-dashed border-blue-400 bg-blue-50/60 rounded-3xl;
     min-height: 240px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #64748b;
-    font-size: 14px;
-    transition: all 0.2s ease;
+    color: #3b82f6;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    animation: placeholder-bounce 2s ease-in-out infinite;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+  }
+
+  @keyframes placeholder-bounce {
+    0%, 100% { 
+      transform: translateY(0px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+    }
+    50% { 
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3);
+    }
   }
 
   .drag-placeholder::before {
-    content: "拖放到此处";
+    content: "📌 拖放到此处";
+    margin-bottom: 8px;
+  }
+
+  .drag-placeholder::after {
+    content: "松开鼠标完成排序";
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 400;
   }
 }

@@ -263,24 +263,22 @@ router.post('/reorder', async (req, res, next) => {
         task.updatedAt = new Date().toISOString();
       });
 
-      // 找到在排序后数组中的位置
+      // 找到被拖拽的任务和目标任务
       const draggedTask = tasks.find(t => t.id === draggedTaskId);
       const targetTask = tasks.find(t => t.id === targetTaskId);
       
       const draggedSortedIndex = sortedTasks.findIndex(t => t.id === draggedTaskId);
       const targetSortedIndex = sortedTasks.findIndex(t => t.id === targetTaskId);
 
-      // 移除被拖拽的任务
-      sortedTasks.splice(draggedSortedIndex, 1);
+      // 直接交换两个任务的sortOrder
+      const draggedSortOrder = sortedTasks[draggedSortedIndex].sortOrder;
+      const targetSortOrder = sortedTasks[targetSortedIndex].sortOrder;
       
-      // 插入到目标位置
-      sortedTasks.splice(targetSortedIndex, 0, draggedTask);
-
-      // 重新分配sortOrder
-      sortedTasks.forEach((task, index) => {
-        task.sortOrder = index;
-        task.updatedAt = new Date().toISOString();
-      });
+      // 更新sortOrder
+      draggedTask.sortOrder = targetSortOrder;
+      targetTask.sortOrder = draggedSortOrder;
+      draggedTask.updatedAt = new Date().toISOString();
+      targetTask.updatedAt = new Date().toISOString();
 
       return tasks;
     }, []);
