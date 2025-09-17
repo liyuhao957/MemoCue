@@ -124,50 +124,45 @@ MemoCue/
 
 ## ⚙️ 配置说明
 
-### 环境变量 (.env)
+### 环境变量配置
+
+项目支持通过环境变量进行配置，可创建 `.env` 文件：
+
 ```bash
-# 服务端口
+# 服务端口（可选，默认3000）
 PORT=3000
 
-# 数据目录
-DATA_DIR=./data
+# CORS 来源控制（可选，默认允许所有）
+CORS_ORIGIN=*
 
-# 加密密钥（请修改为复杂密钥）
+# 加密密钥（推荐设置）
 ENCRYPTION_SECRET=your-secret-key-here
-
-# 日志级别
-LOG_LEVEL=info
-
-# 时区设置
-TZ=Asia/Shanghai
 ```
 
 ### API 接口
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/health` | GET | 健康检查 |
-| `/api/status` | GET | 运行状态信息 |
-| `/api/export` | GET | 导出所有数据 |
-| `/api/import` | POST | 导入数据 |
-| `/api/tasks` | GET/POST | 任务管理 |
-| `/api/devices` | GET/POST | 设备管理 |
+| `/api/tasks` | GET/POST/PUT/DELETE | 任务管理 |
+| `/api/devices` | GET/POST/DELETE | 设备管理 |
+| `/api/categories` | GET/POST/PUT/DELETE | 分类管理 |
+| `/api/push/:taskId` | POST | 测试推送 |
+| `/api/logs` | GET | 获取执行日志 |
+| `/events` | GET | SSE 实时事件流 |
 
 ## 🚀 部署指南
 
-### 开发环境
+### 直接启动
 ```bash
-# 开发模式启动（支持热重载）
-npm run dev
+# 启动服务（使用 nodemon，支持热重载）
+npm start
+
+# 构建前端资源（可选）
+npm run build
 ```
 
-### 生产环境
-
-#### 使用 PM2（推荐）
+### 使用 PM2 管理（推荐生产环境）
 ```bash
-# 构建生产版本
-npm run build
-
 # 安装 PM2
 npm install -g pm2
 
@@ -179,26 +174,16 @@ pm2 status
 
 # 查看日志
 pm2 logs memocue
-```
 
-#### 使用 Docker
-```dockerfile
-# Dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
+# 重启服务
+pm2 restart memocue
 ```
 
 ### 安全建议
 
-- 🔐 **修改默认密钥**：确保 `ENCRYPTION_SECRET` 足够复杂
-- 🌐 **网络访问控制**：使用防火墙限制访问来源
-- 🔄 **定期备份**：设置定时任务自动备份 `data/` 目录
+- 🔐 **设置加密密钥**：创建 `.env` 文件并设置 `ENCRYPTION_SECRET`
+- 🌐 **网络访问控制**：设置 `CORS_ORIGIN` 限制访问来源
+- 🔄 **定期备份**：使用 `npm run data:backup` 定期备份数据
 - 📊 **监控日志**：定期检查 `data/logs/` 下的日志文件
 
 ## 🔧 故障排除
@@ -216,8 +201,8 @@ CMD ["npm", "start"]
 - 查看控制台是否有错误提示
 
 **Q: 数据丢失怎么恢复？**
-- 使用 `data/backups/` 下的备份文件
-- 通过 `/api/import` 接口导入数据
+- 使用 `npm run data:backup` 创建的备份文件
+- 手动恢复 `data/` 目录下的 JSON 文件
 
 ## 🤝 贡献指南
 
