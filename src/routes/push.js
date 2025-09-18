@@ -67,48 +67,85 @@ router.post('/:taskId', async (req, res, next) => {
       throw new NotFoundError('任务关联的设备不存在');
     }
 
-    // 获取推送提供者
-    const provider = providerFactory.create(device.providerType);
+    let result = null;
+    let duration = 0;
+    // 将 startTime 提到 try 块外，确保异常时也能计算耗时
+    const startTime = Date.now();
 
-    // 发送推送
-    const message = {
-      title: task.title,
-      content: task.content,
-      priority: task.priority,
-      sound: task.sound,
-      icon: task.icon,
-      group: task.group
-    };
+    try {
+      // 获取推送提供者
+      const provider = providerFactory.create(device.providerType);
 
-    const result = await provider.send(device, message);
+      // 发送推送
+      const message = {
+        title: task.title,
+        content: task.content,
+        priority: task.priority,
+        sound: task.sound,
+        icon: task.icon,
+        group: task.group
+      };
 
-    // 记录执行日志
-    await logStore.recordExecution({
-      taskId: task.id,
-      taskTitle: task.title,
-      deviceId: device.id,
-      deviceName: device.name,
-      status: result.success ? 'success' : 'failed',
-      error: result.success ? null : result.error
-    });
+      result = await provider.send(device, message);
+      // 立即计算推送耗时，不包含后续文件操作
+      duration = Date.now() - startTime;
 
-    // 更新最后推送时间
-    if (result.success) {
-      await fileStore.updateJson('tasks.json', (tasks) => {
-        const t = tasks.find(task => task.id === taskId);
-        if (t) {
-          t.lastPushAt = new Date().toISOString();
+      // 更新最后推送时间（不计入推送耗时）
+      if (result.success) {
+        await fileStore.updateJson('tasks.json', (tasks) => {
+          const t = tasks.find(task => task.id === taskId);
+          if (t) {
+            t.lastPushAt = new Date().toISOString();
+          }
+          return tasks;
+        }, []);
+      }
+
+      // 记录执行日志（包含准确的推送耗时）
+      await logStore.recordExecution({
+        taskId: task.id,
+        taskTitle: task.title,
+        deviceId: device.id,
+        deviceName: device.name,
+        status: result.success ? 'success' : 'failed',
+        error: result.success ? null : result.error,
+        duration
+      });
+
+      logger.info('Manual push triggered', {
+        taskId,
+        success: result.success,
+        duration
+      });
+
+      res.json(result);
+    } catch (err) {
+      // 计算异常情况下的耗时
+      if (duration === 0) {
+        duration = Date.now() - startTime;
+      }
+
+      // 如果推送过程出错，仍然尝试记录日志
+      if (!result) {
+        // 推送调用本身失败，记录失败日志
+        try {
+          await logStore.recordExecution({
+            taskId: task.id,
+            taskTitle: task.title,
+            deviceId: device.id,
+            deviceName: device.name,
+            status: 'failed',
+            error: err.message || '推送异常',
+            duration
+          });
+        } catch (logError) {
+          logger.error('Failed to record execution log', logError);
         }
-        return tasks;
-      }, []);
+      }
+
+      // 将错误传递给全局错误处理中间件，保持响应格式一致
+      return next(err);
     }
-
-    logger.info('Manual push triggered', {
-      taskId,
-      success: result.success
-    });
-
-    res.json(result);
   } catch (error) {
     next(error);
   }

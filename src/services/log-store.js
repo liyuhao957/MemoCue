@@ -34,7 +34,8 @@ class LogStore {
         error: logEntry.error || null,
         timestamp: new Date().toISOString(),
         iteration: logEntry.iteration || 1,
-        totalIterations: logEntry.totalIterations || 1
+        totalIterations: logEntry.totalIterations || 1,
+        duration: logEntry.duration || 0 // 推送耗时（毫秒）
       };
 
       // 添加新记录到开头

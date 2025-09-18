@@ -104,6 +104,9 @@ class TaskExecutor {
     const results = [];
 
     for (const device of devices) {
+      // 记录开始时间
+      const startTime = Date.now();
+
       try {
         // 修复：使用正确的设备字段名称
         const providerType = device.providerType || device.type || 'bark';
@@ -123,6 +126,9 @@ class TaskExecutor {
           priority: task.priority
         });
 
+        // 计算耗时
+        const duration = Date.now() - startTime;
+
         results.push({
           deviceId: device.id,
           success: result.success,
@@ -130,7 +136,7 @@ class TaskExecutor {
           iteration
         });
 
-        // 记录执行日志
+        // 记录执行日志（包含耗时）
         await logStore.recordExecution({
           taskId: task.id,
           taskTitle: task.title,
@@ -139,7 +145,8 @@ class TaskExecutor {
           status: result.success ? 'success' : 'failed',
           error: result.success ? null : result.error,
           iteration,
-          totalIterations
+          totalIterations,
+          duration
         });
 
         if (result.success) {
@@ -148,6 +155,9 @@ class TaskExecutor {
           logger.warn(`推送失败 - 任务: ${task.id}, 设备: ${device.name}, 第 ${iteration}/${totalIterations} 次, 错误: ${result.error}`);
         }
       } catch (error) {
+        // 计算耗时（即使失败也记录耗时）
+        const duration = Date.now() - startTime;
+
         results.push({
           deviceId: device.id,
           success: false,
@@ -155,7 +165,7 @@ class TaskExecutor {
           iteration
         });
 
-        // 记录执行失败日志
+        // 记录执行失败日志（包含耗时）
         await logStore.recordExecution({
           taskId: task.id,
           taskTitle: task.title,
@@ -164,7 +174,8 @@ class TaskExecutor {
           status: 'failed',
           error: error.message,
           iteration,
-          totalIterations
+          totalIterations,
+          duration
         });
 
         logger.error(`推送异常 - 任务: ${task.id}, 设备: ${device.name}, 第 ${iteration}/${totalIterations} 次`, error);
