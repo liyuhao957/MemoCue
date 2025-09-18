@@ -1,65 +1,39 @@
-# 📱 MemoCue Lite
+# MemoCue Lite
 
 <div align="center">
 
-**轻量级智能提醒助手**
+**轻量级定时提醒服务**
 
-一款简洁优雅的定时提醒服务，通过 Bark 推送无缝同步到 iOS 设备  
-让您的重要事项永不遗漏 ⏰
+支持 iOS Bark 和飞书机器人推送的任务提醒工具
 
 [![Node.js](https://img.shields.io/badge/Node.js-≥18-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-iOS-lightgrey.svg)](https://apps.apple.com/app/bark-customed-notifications/id1403753865)
 
 </div>
 
----
+## ✨ 主要功能
 
-## 📸 界面预览
+### 定时提醒
+- 支持多种定时模式：一次性、每日、每周、每月、间隔、Cron 表达式
+- 重复发送：可配置重试次数和间隔时间
+- 执行日志：记录每次推送的状态、耗时和错误信息
 
-<div align="center">
+### 推送渠道
+- **iOS Bark**：通过 Bark App 推送到 iPhone/iPad
+- **飞书机器人**：支持群组机器人推送，可配置签名验证
+- 多设备管理：支持添加多个推送设备并随时切换
+- 推送测试：一键测试推送连通性
 
-### 🏠 主控制台
-智能任务卡片，实时状态更新，支持拖拽排序
+### 任务管理
+- 任务分类：自定义分类，支持图标和颜色配置
+- 拖拽排序：通过拖拽调整任务优先级
+- 批量操作：支持批量启用、禁用和删除任务
+- 实时状态：SSE 推送任务执行状态更新
 
-![主控制台](screenshots/dashboard.png)
-
-### 📱 设备管理
-多设备支持，一键测试推送连通性
-
-![设备管理](screenshots/device-management.png)
-
-### ✏️ 任务编辑
-丰富的定时选项，直观的配置界面
-
-![任务编辑](screenshots/task-editor.png)
-
-</div>
-
----
-
-## ✨ 主要特性
-
-### 🎯 灵活的提醒方式
-- **多种定时模式**：一次性、每日、每周、每月、自定义间隔、Cron 表达式
-- **智能重复发送**：支持失败重试，确保重要通知不丢失
-- **执行状态跟踪**：自动记录成功/失败状态，提供详细的执行历史
-
-### 📱 设备管理
-- **多设备支持**：管理多台 iOS 设备，灵活切换推送目标
-- **快速测试**：一键测试推送连通性，确保设备配置正确
-- **安全加密**：设备密钥本地加密存储，保护隐私安全
-
-### 🎨 现代化界面
-- **直观的 Web 控制台**：基于 Alpine.js 的响应式单页应用
-- **智能分类管理**：自定义分类，支持图标和颜色个性化
-- **实时拖拽排序**：直观的卡片拖拽，随心调整任务优先级
-- **实时状态更新**：SSE 推送，任务状态变化即时可见
-
-### 💾 数据安全
-- **本地存储**：数据完全存储在本地 JSON 文件，无需担心隐私泄露
-- **备份恢复**：内置导入导出功能，支持一键备份和迁移
-- **原子写入**：采用原子文件操作，确保数据完整性
+### 数据管理
+- 本地存储：所有数据存储在本地 JSON 文件
+- 导入导出：支持数据备份和恢复，包含数据验证
+- 原子写入：确保数据一致性和完整性
 
 ## 🛠️ 技术栈
 
@@ -79,33 +53,42 @@
 
 ### 环境要求
 - Node.js ≥ 18.0.0
-- iOS 设备 + [Bark App](https://apps.apple.com/app/bark-customed-notifications/id1403753865)
+- iOS 用户需安装 [Bark App](https://apps.apple.com/app/bark-customed-notifications/id1403753865)
+- 飞书用户需创建自定义机器人
 
 ### 安装步骤
 
 ```bash
-# 1. 克隆项目
+# 克隆项目
 git clone https://github.com/your-username/memocue-lite.git
 cd memocue-lite
 
-# 2. 安装依赖
+# 安装依赖
 npm install
 
-# 3. 初始化数据和配置
+# 初始化数据
 npm run data:init
 
-# 4. 启动服务
+# 启动服务
 npm start
 ```
 
-### 首次配置
+### 配置推送
 
-1. 📱 **安装 Bark**：在 App Store 下载 [Bark](https://apps.apple.com/app/bark-customed-notifications/id1403753865)
-2. 🔑 **获取密钥**：打开 Bark，复制设备密钥（形如：`https://api.day.app/your-key`）
-3. 🌐 **打开控制台**：浏览器访问 [http://localhost:3000](http://localhost:3000)
-4. ⚙️ **添加设备**：点击"设备管理" → "添加设备"，粘贴 Bark 密钥
-5. ✅ **测试连接**：点击"测试推送"确保配置正确
-6. 📝 **创建提醒**：点击"创建提醒"开始使用
+#### iOS Bark
+1. 安装 [Bark App](https://apps.apple.com/app/bark-customed-notifications/id1403753865)
+2. 复制推送地址（格式：`https://api.day.app/你的密钥`）
+3. 访问 [http://localhost:3000](http://localhost:3000)
+4. 设备管理 → 添加设备 → 选择 Bark → 粘贴地址
+5. 测试推送确认配置正确
+
+#### 飞书机器人
+1. 在飞书群组中添加自定义机器人
+2. 复制 Webhook 地址
+3. 访问 [http://localhost:3000](http://localhost:3000)
+4. 设备管理 → 添加设备 → 选择飞书 → 粘贴 Webhook
+5. 如有签名密钥请一并填写
+6. 测试推送确认配置正确
 
 ## 📋 常用命令
 
@@ -211,42 +194,30 @@ pm2 restart memocue
 
 ## 🔧 故障排除
 
-### 常见问题
-
-**Q: 推送失败怎么办？**
-- 检查 Bark 密钥是否正确
-- 确认网络连接正常
+### 推送失败
+- 检查推送地址是否完整正确
+- 确认 Bark App 或飞书机器人状态正常
 - 查看 `data/logs/error.log` 获取详细错误信息
 
-**Q: 定时任务不执行？**
-- 检查系统时间是否正确
+### 定时任务不执行
 - 确认任务状态为"启用"
-- 查看控制台是否有错误提示
+- 检查系统时间和时区设置
+- 验证 Cron 表达式是否正确（可用 [crontab.guru](https://crontab.guru) 验证）
 
-**Q: 数据丢失怎么恢复？**
-- 使用 `npm run data:backup` 创建的备份文件
-- 手动恢复 `data/` 目录下的 JSON 文件
+### 数据丢失恢复
+- 检查 `data/backup/` 目录的备份文件
+- 查看 `data/*.json` 文件是否存在
+- 如有 `.lock` 文件阻塞，可尝试删除
 
-## 🤝 贡献指南
+### 页面无法访问
+- 确认服务已启动 (`npm start`)
+- 检查端口占用（可更换端口：`PORT=3001 npm start`）
+- 确认使用 http 而非 https 访问
 
-欢迎提交 Issue 和 Pull Request！
+## 🤝 贡献
 
-1. Fork 本仓库
-2. 创建特性分支：`git checkout -b feature/amazing-feature`
-3. 提交更改：`git commit -m 'Add amazing feature'`
-4. 推送分支：`git push origin feature/amazing-feature`
-5. 提交 Pull Request
+欢迎提交 Issue 和 Pull Request
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
-
----
-
-<div align="center">
-
-**⭐ 如果这个项目对你有帮助，请给个 Star 支持一下！**
-
-Made with ❤️ by [Your Name]
-
-</div>
+MIT License - 详见 [LICENSE](LICENSE) 文件
