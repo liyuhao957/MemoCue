@@ -40,6 +40,8 @@ function memoCueApp() {
     // 编辑状态
     editingTask: null,
     editingCategory: null,
+    editingDevice: null,
+    savingDevice: false,
 
     // 表单数据
     taskForm: {
@@ -342,8 +344,24 @@ function memoCueApp() {
     },
 
     // ===== 设备管理方法（调用模块） =====
+    // 保存设备（新增或更新）
+    async saveDevice() {
+      await DeviceManager.saveDevice(this);
+    },
+
+    // 添加设备（兼容旧代码）
     async addDevice() {
       await DeviceManager.addDevice(this);
+    },
+
+    // 编辑设备
+    editDevice(device) {
+      DeviceManager.editDevice(device, this);
+    },
+
+    // 取消编辑设备
+    cancelEditDevice() {
+      DeviceManager.cancelEditDevice(this);
     },
 
     onProviderTypeChange() {
@@ -500,6 +518,10 @@ function memoCueApp() {
           this.resetTaskForm();
         } else if (modalType === 'category') {
           this.resetCategoryForm();
+        } else if (modalType === 'device') {
+          this.resetDeviceForm();
+          // 确保退出编辑状态
+          this.editingDevice = null;
         }
       }, 300); // 等待过渡动画完成
     }

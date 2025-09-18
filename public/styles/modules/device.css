@@ -105,18 +105,30 @@
     background: rgba(255, 255, 255, 0.92);
     padding: 1rem 1.25rem;
     box-shadow: 0 22px 42px -32px rgba(30, 64, 175, 0.32);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    cursor: pointer;
   }
 
   .device-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 28px 52px -30px rgba(30, 64, 175, 0.36);
     border-color: rgba(191, 219, 254, 0.9);
+    background: rgba(248, 250, 252, 0.95);
   }
 
   .device-card--default {
     border-color: rgba(59, 130, 246, 0.45);
     background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), #ffffff);
+  }
+
+  .device-card--editing {
+    border-color: #3b82f6 !important;
+    background: linear-gradient(135deg, rgba(219, 234, 254, 0.3), rgba(240, 249, 255, 0.95)) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 28px 52px -30px rgba(30, 64, 175, 0.4) !important;
+  }
+
+  .device-card--editing:hover {
+    transform: none;
   }
 
   .device-card__main {

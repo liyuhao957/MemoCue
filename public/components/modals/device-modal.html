@@ -56,7 +56,11 @@
 
           <div x-show="devices.length" class="device-card-list" x-cloak>
             <template x-for="device in devices" :key="device.id">
-              <div class="device-card" :class="{'device-card--default': device.isDefault}">
+              <div class="device-card"
+                   :class="{'device-card--default': device.isDefault, 'device-card--editing': editingDevice && editingDevice.id === device.id}"
+                   @click="editDevice(device)"
+                   style="cursor: pointer; transition: all 0.2s ease;"
+                   :style="editingDevice && editingDevice.id === device.id ? 'background: #f0f9ff; border-color: #3b82f6;' : ''">
                 <div class="device-card__main">
                   <div class="device-card__avatar">
                     <span class="device-card__emoji" aria-hidden="true"
@@ -88,11 +92,11 @@
                   </div>
                 </div>
                 <div class="device-card__actions">
-                  <button type="button" @click="testDevice(device.id)"
+                  <button type="button" @click.stop="testDevice(device.id)"
                           class="device-card__button device-card__button--test">
                     测试
                   </button>
-                  <button type="button" @click="deleteDevice(device.id)"
+                  <button type="button" @click.stop="deleteDevice(device.id)"
                           class="device-card__button device-card__button--danger">
                     删除
                   </button>
@@ -117,21 +121,26 @@
 
         <section class="section-card device-modal__section device-modal__form">
           <div class="device-modal__form-header">
-            <h3 class="device-modal__form-title">添加推送设备</h3>
-            <p class="device-modal__form-desc">
-              选择推送类型，填写相应配置即可完成绑定。首台设备会自动成为默认设备。
+            <h3 class="device-modal__form-title" x-text="editingDevice ? '编辑推送设备' : '添加推送设备'"></h3>
+            <p class="device-modal__form-desc" x-text="editingDevice ?
+              '修改设备配置信息。如需修改密钥等敏感信息，请留空表示不修改。' :
+              '选择推送类型，填写相应配置即可完成绑定。首台设备会自动成为默认设备。'">
             </p>
           </div>
-          <form @submit.prevent="addDevice" class="device-modal__form-grid">
+          <form @submit.prevent="saveDevice" class="device-modal__form-grid">
             <div class="form-field">
               <label class="label-modern">推送类型</label>
               <select x-model="deviceForm.providerType"
                       @change="onProviderTypeChange"
-                      class="input-modern" required>
+                      class="input-modern"
+                      :disabled="editingDevice"
+                      required>
                 <option value="bark">Bark (iOS)</option>
                 <option value="feishu">飞书机器人</option>
               </select>
-              <p class="device-modal__hint">选择您要使用的推送服务类型</p>
+              <p class="device-modal__hint" x-text="editingDevice ?
+                '编辑模式下不能修改推送类型' :
+                '选择您要使用的推送服务类型'"></p>
             </div>
             <div class="form-field">
               <label class="label-modern">设备名称</label>
@@ -146,20 +155,26 @@
             <template x-if="deviceForm.providerType === 'bark'">
               <div class="form-field">
                 <label class="label-modern">Bark 服务器</label>
-                <input type="url" x-model="deviceForm.server" required
-                       placeholder="https://api.day.app"
+                <input type="url" x-model="deviceForm.server"
+                       :required="!editingDevice"
+                       :placeholder="editingDevice ? '留空则不修改（需同时提供Key）' : 'https://api.day.app'"
                        class="input-modern">
-                <p class="device-modal__hint">国内使用推荐保持默认服务器，需自建时填写自定义地址。</p>
+                <p class="device-modal__hint" x-text="editingDevice ?
+                  '如需修改服务器地址，请同时提供设备Key。留空则保持原配置。' :
+                  '国内使用推荐保持默认服务器，需自建时填写自定义地址。'"></p>
               </div>
             </template>
 
             <template x-if="deviceForm.providerType === 'bark'">
               <div class="form-field">
                 <label class="label-modern">设备 Key</label>
-                <input type="text" x-model="deviceForm.key" required
-                       placeholder="你的 Bark 设备 Key"
+                <input type="text" x-model="deviceForm.key"
+                       :required="!editingDevice"
+                       :placeholder="editingDevice ? '留空则不修改' : '你的 Bark 设备 Key'"
                        class="input-modern">
-                <p class="device-modal__hint">Key 将加密存储，仅用于推送，不会泄露给第三方。</p>
+                <p class="device-modal__hint" x-text="editingDevice ?
+                  '如需修改配置，请同时提供服务器地址和Key。全部留空则保持原配置不变。' :
+                  'Key 将加密存储，仅用于推送，不会泄露给第三方。'"></p>
               </div>
             </template>
 
@@ -167,10 +182,13 @@
             <template x-if="deviceForm.providerType === 'feishu'">
               <div class="form-field">
                 <label class="label-modern">Webhook URL</label>
-                <input type="url" x-model="deviceForm.webhookUrl" required
-                       placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+                <input type="url" x-model="deviceForm.webhookUrl"
+                       :required="!editingDevice"
+                       :placeholder="editingDevice ? '留空则不修改' : 'https://open.feishu.cn/open-apis/bot/v2/hook/xxx'"
                        class="input-modern">
-                <p class="device-modal__hint">在飞书群设置中添加机器人，复制 Webhook 地址填写到这里。</p>
+                <p class="device-modal__hint" x-text="editingDevice ?
+                  '如需修改配置，必须提供Webhook URL。全部留空则保持原配置不变。' :
+                  '在飞书群设置中添加机器人，复制 Webhook 地址填写到这里。'"></p>
               </div>
             </template>
 
@@ -178,9 +196,11 @@
               <div class="form-field">
                 <label class="label-modern">签名密钥（可选）</label>
                 <input type="text" x-model="deviceForm.secret"
-                       placeholder="如启用签名验证，请输入密钥"
+                       :placeholder="editingDevice ? '留空则不修改' : '如启用签名验证，请输入密钥'"
                        class="input-modern">
-                <p class="device-modal__hint">如果在飞书中启用了签名验证，请输入对应的密钥，否则留空。</p>
+                <p class="device-modal__hint" x-text="editingDevice ?
+                  '如修改配置需同时提供Webhook URL。密钥为选填项。' :
+                  '如果在飞书中启用了签名验证，请输入对应的密钥，否则留空。'"></p>
               </div>
             </template>
 
@@ -196,8 +216,17 @@
                 <p class="device-modal__hint">卡片消息支持更丰富的展示效果和按钮操作。</p>
               </div>
             </template>
-            <button type="submit" class="device-modal__submit">
-              添加设备
+            <button type="submit" class="device-modal__submit"
+                    :disabled="savingDevice"
+                    :style="savingDevice ? 'opacity: 0.7; cursor: not-allowed;' : ''"
+                    x-text="savingDevice ? '保存中...' : (editingDevice ? '更新设备' : '添加设备')">
+            </button>
+            <button type="button" x-show="editingDevice" x-cloak
+                    @click="cancelEditDevice()"
+                    :disabled="savingDevice"
+                    class="device-modal__submit"
+                    style="background: #6b7280; margin-top: 8px;">
+              取消编辑
             </button>
           </form>
         </section>
