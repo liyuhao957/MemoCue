@@ -42,8 +42,12 @@ class TaskScheduler {
       };
 
       // 对于cron类型任务，创建定时任务
-      if (task.scheduleType === 'cron' && task.scheduleValue) {
-        const cronJob = cron.schedule(task.scheduleValue, async () => {
+      // 兼容新旧数据结构
+      const scheduleType = task.schedule?.type || task.scheduleType;
+      const cronExpression = task.schedule?.expression || task.scheduleValue;
+
+      if (scheduleType === 'cron' && cronExpression) {
+        const cronJob = cron.schedule(cronExpression, async () => {
           if (onJobCreated) {
             await onJobCreated(task.id);
           }
@@ -52,6 +56,7 @@ class TaskScheduler {
           timezone
         });
         job.cronJob = cronJob;
+        logger.debug('Cron任务已注册', { taskId: task.id, expression: cronExpression });
       }
 
       logger.info('任务已调度', {

@@ -146,8 +146,11 @@ class Scheduler {
       );
 
       if (result.success) {
+        // 使用新的数据结构 task.schedule?.type，同时兼容旧结构
+        const scheduleType = job.task.schedule?.type || job.task.scheduleType;
+
         // 计算并更新下次执行时间
-        if (job.task.scheduleType !== 'once') {
+        if (scheduleType !== 'once') {
           const nextPushAt = TaskScheduler.calculateNextPushTime(job.task);
           if (nextPushAt) {
             job.nextPushAt = nextPushAt;
@@ -157,6 +160,7 @@ class Scheduler {
           // 单次任务执行后禁用
           await TaskManager.disableTask(taskId);
           this.removeTask(taskId);
+          logger.info('单次任务执行完成并禁用', { taskId });
         }
       } else {
         this.handleTaskFailure(job, result.error);

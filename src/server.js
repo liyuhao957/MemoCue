@@ -130,20 +130,151 @@ app.get('/api/export', async (req, res, next) => {
 app.post('/api/import', async (req, res, next) => {
   try {
     const { tasks, devices, categories } = req.body;
+    const cryptoUtil = require('./utils/crypto');
+    // 使用与其他模块一致的默认密钥
+    const encryptionSecret = process.env.ENCRYPTION_SECRET || 'default-secret-change-me';
 
+    // 验证并处理任务数据
     if (tasks) {
-      await fileStore.writeJson('tasks.json', tasks);
-      logger.info('Tasks imported', { count: tasks.length });
+      if (!Array.isArray(tasks)) {
+        return res.status(400).json({ error: '任务数据必须是数组格式' });
+      }
+
+      // 对每个任务进行基础验证和处理
+      const validatedTasks = tasks.map(task => {
+        // 确保必要字段存在
+        if (!task.id || !task.title) {
+          throw new Error('任务缺少必要字段');
+        }
+
+        // 确保时间字段存在
+        task.createdAt = task.createdAt || new Date().toISOString();
+        task.updatedAt = task.updatedAt || new Date().toISOString();
+
+        // 确保布尔字段的类型正确
+        task.enabled = Boolean(task.enabled);
+
+        // 兼容新旧数据结构
+        if (!task.schedule && task.scheduleType) {
+          // 旧结构转新结构
+          task.schedule = {
+            type: task.scheduleType,
+            value: task.scheduleValue
+          };
+        }
+
+        return task;
+      });
+
+      await fileStore.writeJson('tasks.json', validatedTasks);
+      logger.info('Tasks imported', { count: validatedTasks.length });
     }
 
+    // 验证并处理设备数据
     if (devices) {
-      await fileStore.writeJson('devices.json', devices);
-      logger.info('Devices imported', { count: devices.length });
+      if (!Array.isArray(devices)) {
+        return res.status(400).json({ error: '设备数据必须是数组格式' });
+      }
+
+      // 对每个设备进行验证和密钥重新加密
+      const validatedDevices = devices.map(device => {
+        // 确保必要字段存在（使用正确的字段名）
+        if (!device.id || !device.name || !device.providerType) {
+          throw new Error('设备缺少必要字段');
+        }
+
+        // 重新加密设备配置（如果存在）
+        if (device.providerConfig) {
+          try {
+            let decryptedConfig;
+
+            // 如果是加密字符串，先解密
+            if (typeof device.providerConfig === 'string') {
+              // 尝试解密现有的加密配置
+              decryptedConfig = cryptoUtil.decrypt(
+                device.providerConfig,
+                encryptionSecret
+              );
+              // 解密后应该是 JSON 字符串
+              if (typeof decryptedConfig === 'string') {
+                decryptedConfig = JSON.parse(decryptedConfig);
+              }
+            } else {
+              // 如果是对象，直接使用
+              decryptedConfig = device.providerConfig;
+            }
+
+            // 重新加密配置为字符串格式（与现有数据结构一致）
+            const encryptedConfig = cryptoUtil.encrypt(
+              JSON.stringify(decryptedConfig),
+              encryptionSecret
+            );
+
+            // 保持字符串格式
+            device.providerConfig = encryptedConfig;
+          } catch (e) {
+            // 如果解密失败，可能是未加密的对象，直接加密
+            logger.warn('Failed to decrypt device config, encrypting as new', {
+              deviceId: device.id,
+              error: e.message
+            });
+
+            // 如果 providerConfig 是对象，加密它
+            if (typeof device.providerConfig === 'object') {
+              device.providerConfig = cryptoUtil.encrypt(
+                JSON.stringify(device.providerConfig),
+                encryptionSecret
+              );
+            }
+            // 如果已经是加密字符串，保持原样
+          }
+        }
+
+        // 确保时间字段存在
+        device.createdAt = device.createdAt || new Date().toISOString();
+        // 确保布尔字段存在
+        device.isActive = device.isActive !== undefined ? device.isActive : true;
+
+        return device;
+      });
+
+      await fileStore.writeJson('devices.json', validatedDevices);
+      logger.info('Devices imported', { count: validatedDevices.length });
     }
 
+    // 验证并处理分类数据
     if (categories) {
-      await fileStore.writeJson('categories.json', categories);
-      logger.info('Categories imported', { count: categories.length });
+      if (!Array.isArray(categories)) {
+        return res.status(400).json({ error: '分类数据必须是数组格式' });
+      }
+
+      // 对每个分类进行基础验证
+      const validatedCategories = categories.map(category => {
+        // 确保必要字段存在
+        if (!category.id || !category.name) {
+          throw new Error('分类缺少必要字段');
+        }
+
+        // 确保时间字段存在
+        category.createdAt = category.createdAt || new Date().toISOString();
+
+        return category;
+      });
+
+      // 确保默认分类存在
+      const hasDefaultCategory = validatedCategories.some(c => c.id === 'default');
+      if (!hasDefaultCategory) {
+        validatedCategories.unshift({
+          id: 'default',
+          name: '默认分类',
+          color: '#6b7280',
+          icon: '📌',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      await fileStore.writeJson('categories.json', validatedCategories);
+      logger.info('Categories imported', { count: validatedCategories.length });
     }
 
     // 重新加载调度器
@@ -158,6 +289,7 @@ app.post('/api/import', async (req, res, next) => {
       }
     });
   } catch (error) {
+    logger.error('Import failed', { error: error.message });
     next(error);
   }
 });

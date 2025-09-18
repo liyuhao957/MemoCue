@@ -2,7 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const fileStore = require('../services/file-store');
 const { validate } = require('../middleware/validator');
-const { NotFoundError, ConflictError } = require('../middleware/error');
+const { NotFoundError, ConflictError, ForbiddenError } = require('../middleware/error');
 const logger = require('../utils/logger');
 
 const router = express.Router();

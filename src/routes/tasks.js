@@ -234,16 +234,13 @@ router.post('/reorder', async (req, res, next) => {
       return res.status(400).json({ error: '缺少必要的参数' });
     }
 
+    // 如果是同一个任务，直接返回
+    if (draggedTaskId === targetTaskId) {
+      return res.json({ success: true });
+    }
+
     await fileStore.updateJson('tasks.json', (tasks) => {
-      // 找到被拖拽的任务和目标任务
-      const draggedIndex = tasks.findIndex(t => t.id === draggedTaskId);
-      const targetIndex = tasks.findIndex(t => t.id === targetTaskId);
-
-      if (draggedIndex === -1 || targetIndex === -1) {
-        throw new Error('任务不存在');
-      }
-
-      // 获取当前已排序的任务（按sortOrder排序）
+      // 首先对任务进行排序
       const sortedTasks = [...tasks].sort((a, b) => {
         if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
           return a.sortOrder - b.sortOrder;
@@ -257,28 +254,36 @@ router.post('/reorder', async (req, res, next) => {
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
 
-      // 重新计算sortOrder
+      // 找到被拖拽任务和目标任务在排序数组中的索引
+      const draggedIndex = sortedTasks.findIndex(t => t.id === draggedTaskId);
+      const targetIndex = sortedTasks.findIndex(t => t.id === targetTaskId);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        throw new Error('任务不存在');
+      }
+
+      // 从数组中移除被拖拽的任务
+      const [draggedTask] = sortedTasks.splice(draggedIndex, 1);
+
+      // 计算新的插入位置
+      // 向下拖拽时，移除元素后目标左移，但我们要插入到原目标位置的后面
+      // 所以向下时不需要-1，直接使用 targetIndex
+      const insertIndex = targetIndex;
+
+      // 将被拖拽的任务插入到新位置
+      sortedTasks.splice(insertIndex, 0, draggedTask);
+
+      // 重新分配所有任务的sortOrder
       sortedTasks.forEach((task, index) => {
-        task.sortOrder = index;
-        task.updatedAt = new Date().toISOString();
+        const originalTask = tasks.find(t => t.id === task.id);
+        if (originalTask) {
+          originalTask.sortOrder = index;
+          // 只更新被移动任务的updatedAt时间
+          if (originalTask.id === draggedTaskId) {
+            originalTask.updatedAt = new Date().toISOString();
+          }
+        }
       });
-
-      // 找到被拖拽的任务和目标任务
-      const draggedTask = tasks.find(t => t.id === draggedTaskId);
-      const targetTask = tasks.find(t => t.id === targetTaskId);
-      
-      const draggedSortedIndex = sortedTasks.findIndex(t => t.id === draggedTaskId);
-      const targetSortedIndex = sortedTasks.findIndex(t => t.id === targetTaskId);
-
-      // 直接交换两个任务的sortOrder
-      const draggedSortOrder = sortedTasks[draggedSortedIndex].sortOrder;
-      const targetSortOrder = sortedTasks[targetSortedIndex].sortOrder;
-      
-      // 更新sortOrder
-      draggedTask.sortOrder = targetSortOrder;
-      targetTask.sortOrder = draggedSortOrder;
-      draggedTask.updatedAt = new Date().toISOString();
-      targetTask.updatedAt = new Date().toISOString();
 
       return tasks;
     }, []);

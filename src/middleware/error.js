@@ -41,12 +41,16 @@ const errorHandler = (err, req, res, next) => {
     errorMessage = err.message;
   }
 
-  // 发送错误响应
+  // 记录错误堆栈到日志（用于调试）
+  if (err.stack) {
+    logger.error('错误堆栈', { stack: err.stack });
+  }
+
+  // 发送错误响应（不包含敏感的堆栈信息）
   res.status(statusCode).json({
     error: {
       code: errorCode,
-      message: errorMessage,
-      stack: err.stack
+      message: errorMessage
     },
     timestamp: new Date().toISOString(),
     path: req.path
