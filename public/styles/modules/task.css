@@ -7,7 +7,7 @@
   }
 
   .task-item {
-    @apply relative flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/60 bg-white/90 px-5 py-5 transition-all duration-200 max-w-[360px] min-h-[240px];
+    @apply relative flex flex-col justify-between gap-2 rounded-3xl border border-slate-200/60 bg-white/90 px-5 py-5 transition-all duration-200 max-w-[360px] min-h-[240px];
     box-shadow: 0 22px 45px -38px rgba(30, 64, 175, 0.25);
   }
 
@@ -31,7 +31,7 @@
 
   /* 新增第三行样式 */
   .task-item__info {
-    @apply flex items-center justify-between gap-3 mt-3 mb-3 px-1;
+    @apply flex items-center justify-between gap-3 mt-1 mb-3 px-1;
   }
 
   .task-item__info-left {
@@ -52,7 +52,12 @@
 
   .task-item__desc {
     @apply text-sm text-slate-500 mt-1;
-    white-space: nowrap;
+    white-space: pre-wrap;  /* 允许换行并保留空格 */
+    word-wrap: break-word;  /* 长单词自动换行 */
+    word-break: break-all;  /* 中文字符换行 */
+    line-height: 1.4;       /* 行高 */
+    max-height: 2.8em;      /* 限制为两行高度 */
+    overflow: hidden;       /* 超出隐藏 */
   }
 
   .task-item__meta {

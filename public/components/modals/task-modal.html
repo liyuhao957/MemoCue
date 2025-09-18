@@ -45,10 +45,15 @@
                        placeholder="输入提醒标题（最多14个汉字或28个字符）">
               </div>
               <div class="form-field">
-                <label class="label-modern">内容</label>
-                <textarea x-model="taskForm.content" rows="2"
+                <label class="label-modern">
+                  内容
+                  <span class="text-xs text-gray-500 ml-2" x-text="`${UIUtils.getCharLength(taskForm.content)}/64`"></span>
+                </label>
+                <textarea x-model="taskForm.content"
+                          @input="taskForm.content = UIUtils.limitInputLength($event.target.value, 64)"
+                          rows="2"
                           class="input-modern textarea-modern"
-                          placeholder="输入提醒内容（可选）"></textarea>
+                          placeholder="输入提醒内容（最多32个汉字或64个字符）"></textarea>
               </div>
               <div class="form-field">
                 <label class="label-modern">推送设备</label>
