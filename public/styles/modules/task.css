@@ -29,6 +29,19 @@
     @apply flex items-start gap-3 min-w-0 flex-1;
   }
 
+  /* 新增第三行样式 */
+  .task-item__info {
+    @apply flex items-center justify-between gap-3 mt-3 mb-3 px-1;
+  }
+
+  .task-item__info-left {
+    @apply flex items-center gap-3 flex-1 min-w-0;
+  }
+
+  .task-item__info-right {
+    @apply flex items-center gap-1 flex-shrink-0;
+  }
+
   .task-item__text {
     @apply flex-1 min-w-0;
   }
@@ -81,8 +94,9 @@
 
     /* 移动端拖拽提示更明显 */
     .task-item--dragging {
-      transform: rotate(8deg) scale(1.1);
-      animation: mobile-drag-wobble 0.3s ease-in-out infinite alternate;
+      /* 移动端不重复设置，使用桌面端样式 */
+      /* transform: rotate(8deg) scale(1.1);
+      animation: mobile-drag-wobble 0.3s ease-in-out infinite alternate; */
     }
 
     @keyframes mobile-drag-wobble {
@@ -216,7 +230,7 @@
   .task-item--dragging {
     @apply opacity-60;
     z-index: 1000;
-    pointer-events: none;
+    /* pointer-events: none; 移除此行以修复拖拽问题 */
     transform: rotate(5deg) scale(1.08);
     box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
     border: 2px solid rgba(59, 130, 246, 0.6);

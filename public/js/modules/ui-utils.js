@@ -82,5 +82,48 @@ window.UIUtils = {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  },
+
+  // 获取设备名称（兼容 deviceId 和 deviceIds）
+  getDeviceName(devices, task) {
+    // 优先使用 deviceId
+    if (task.deviceId) {
+      const device = devices.find(d => d.id === task.deviceId);
+      return device ? device.name : '未知设备';
+    }
+    // 兼容 deviceIds 数组格式
+    if (task.deviceIds && task.deviceIds.length > 0) {
+      const deviceNames = task.deviceIds
+        .map(id => {
+          const device = devices.find(d => d.id === id);
+          return device ? device.name : null;
+        })
+        .filter(name => name !== null);
+      if (deviceNames.length === 0) return '未知设备';
+      if (deviceNames.length === 1) return deviceNames[0];
+      return deviceNames.join(' / ');
+    }
+    return '未知设备';
+  },
+
+  // 获取设备图标（兼容 deviceId 和 deviceIds）
+  getDeviceIcon(devices, task) {
+    // 优先使用 deviceId
+    if (task.deviceId) {
+      const device = devices.find(d => d.id === task.deviceId);
+      if (!device) return '❓';
+      return device.providerType === 'bark' ? '📱' : '🤖';
+    }
+    // 兼容 deviceIds 数组格式
+    if (task.deviceIds && task.deviceIds.length > 0) {
+      const firstDeviceId = task.deviceIds[0];
+      const device = devices.find(d => d.id === firstDeviceId);
+      if (!device) return '❓';
+      if (task.deviceIds.length > 1) {
+        return '📲'; // 多设备图标
+      }
+      return device.providerType === 'bark' ? '📱' : '🤖';
+    }
+    return '❓';
   }
 };

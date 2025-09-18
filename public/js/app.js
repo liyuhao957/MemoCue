@@ -253,6 +253,15 @@ function memoCueApp() {
       await TaskManager.testPush(task, this);
     },
 
+    // ===== 设备相关辅助方法 =====
+    getDeviceName(task) {
+      return UIUtils.getDeviceName(this.devices, task);
+    },
+
+    getDeviceIcon(task) {
+      return UIUtils.getDeviceIcon(this.devices, task);
+    },
+
     // ===== 拖拽相关方法 =====
     startDrag(task, event) {
       this.dragging = task.id;
