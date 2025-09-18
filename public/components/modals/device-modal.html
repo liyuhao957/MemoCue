@@ -21,7 +21,7 @@
         <div>
           <h2 class="modal-title">设备管理</h2>
           <p class="modal-subtitle">
-            集中管理可接收提醒的 Bark 设备，默认设备会优先收到推送，其他设备可作为备份。
+            集中管理可接收提醒的推送设备，支持 Bark 和飞书机器人，默认设备会优先收到推送。
           </p>
         </div>
         <button type="button" class="modal-close" @click="closeModal()" aria-label="关闭">
@@ -42,9 +42,9 @@
                 </svg>
               </div>
               <div>
-                <h3 class="device-modal__title">已绑定的 Bark 设备</h3>
+                <h3 class="device-modal__title">已绑定的推送设备</h3>
                 <p class="device-modal__desc">
-                  MemoCue 会按照默认设备推送提醒，你也可以灵活切换或删除不再使用的设备。
+                  MemoCue 会按照默认设备推送提醒，支持 Bark 和飞书等多种推送方式。
                 </p>
               </div>
             </div>
@@ -59,7 +59,8 @@
               <div class="device-card" :class="{'device-card--default': device.isDefault}">
                 <div class="device-card__main">
                   <div class="device-card__avatar">
-                    <span class="device-card__emoji" aria-hidden="true">📱</span>
+                    <span class="device-card__emoji" aria-hidden="true"
+                          x-text="device.providerType === 'feishu' ? '🤖' : '📱'"></span>
                   </div>
                   <div class="device-card__info">
                     <div class="device-card__title">
@@ -69,7 +70,8 @@
                       </span>
                     </div>
                     <div class="device-card__meta">
-                      <span class="device-card__tag">Bark 推送</span>
+                      <span class="device-card__tag"
+                            x-text="device.providerType === 'feishu' ? '飞书机器人' : 'Bark 推送'"></span>
                       <span x-show="device.isActive === false"
                             class="device-card__status device-card__status--offline">
                         未激活
@@ -115,33 +117,85 @@
 
         <section class="section-card device-modal__section device-modal__form">
           <div class="device-modal__form-header">
-            <h3 class="device-modal__form-title">添加 Bark 设备</h3>
+            <h3 class="device-modal__form-title">添加推送设备</h3>
             <p class="device-modal__form-desc">
-              在 Bark App 中复制服务器和 Key，填写后即可完成绑定。首台设备会自动成为默认设备。
+              选择推送类型，填写相应配置即可完成绑定。首台设备会自动成为默认设备。
             </p>
           </div>
           <form @submit.prevent="addDevice" class="device-modal__form-grid">
             <div class="form-field">
+              <label class="label-modern">推送类型</label>
+              <select x-model="deviceForm.providerType"
+                      @change="onProviderTypeChange"
+                      class="input-modern" required>
+                <option value="bark">Bark (iOS)</option>
+                <option value="feishu">飞书机器人</option>
+              </select>
+              <p class="device-modal__hint">选择您要使用的推送服务类型</p>
+            </div>
+            <div class="form-field">
               <label class="label-modern">设备名称</label>
               <input type="text" x-model="deviceForm.name" required
-                     placeholder="我的 iPhone"
+                     :placeholder="deviceForm.providerType === 'feishu' ? '飞书群机器人' : '我的 iPhone'"
                      class="input-modern">
-              <p class="device-modal__hint">建议与 Bark 中的设备名称保持一致，方便识别。</p>
+              <p class="device-modal__hint" x-text="deviceForm.providerType === 'feishu' ?
+                '给这个机器人起一个容易识别的名称' :
+                '建议与 Bark 中的设备名称保持一致，方便识别。'"></p>
             </div>
-            <div class="form-field">
-              <label class="label-modern">Bark 服务器</label>
-              <input type="url" x-model="deviceForm.server" required
-                     placeholder="https://api.day.app"
-                     class="input-modern">
-              <p class="device-modal__hint">国内使用推荐保持默认服务器，需自建时填写自定义地址。</p>
-            </div>
-            <div class="form-field">
-              <label class="label-modern">设备 Key</label>
-              <input type="text" x-model="deviceForm.key" required
-                     placeholder="你的 Bark 设备 Key"
-                     class="input-modern">
-              <p class="device-modal__hint">Key 将加密存储，仅用于推送，不会泄露给第三方。</p>
-            </div>
+            <!-- Bark 配置 -->
+            <template x-if="deviceForm.providerType === 'bark'">
+              <div class="form-field">
+                <label class="label-modern">Bark 服务器</label>
+                <input type="url" x-model="deviceForm.server" required
+                       placeholder="https://api.day.app"
+                       class="input-modern">
+                <p class="device-modal__hint">国内使用推荐保持默认服务器，需自建时填写自定义地址。</p>
+              </div>
+            </template>
+
+            <template x-if="deviceForm.providerType === 'bark'">
+              <div class="form-field">
+                <label class="label-modern">设备 Key</label>
+                <input type="text" x-model="deviceForm.key" required
+                       placeholder="你的 Bark 设备 Key"
+                       class="input-modern">
+                <p class="device-modal__hint">Key 将加密存储，仅用于推送，不会泄露给第三方。</p>
+              </div>
+            </template>
+
+            <!-- 飞书配置 -->
+            <template x-if="deviceForm.providerType === 'feishu'">
+              <div class="form-field">
+                <label class="label-modern">Webhook URL</label>
+                <input type="url" x-model="deviceForm.webhookUrl" required
+                       placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+                       class="input-modern">
+                <p class="device-modal__hint">在飞书群设置中添加机器人，复制 Webhook 地址填写到这里。</p>
+              </div>
+            </template>
+
+            <template x-if="deviceForm.providerType === 'feishu'">
+              <div class="form-field">
+                <label class="label-modern">签名密钥（可选）</label>
+                <input type="text" x-model="deviceForm.secret"
+                       placeholder="如启用签名验证，请输入密钥"
+                       class="input-modern">
+                <p class="device-modal__hint">如果在飞书中启用了签名验证，请输入对应的密钥，否则留空。</p>
+              </div>
+            </template>
+
+            <template x-if="deviceForm.providerType === 'feishu'">
+              <div class="form-field">
+                <label class="label-modern">消息类型</label>
+                <select x-model="deviceForm.messageType" class="input-modern">
+                  <option value="auto">自动选择</option>
+                  <option value="text">纯文本</option>
+                  <option value="rich_text">富文本</option>
+                  <option value="card">卡片消息</option>
+                </select>
+                <p class="device-modal__hint">卡片消息支持更丰富的展示效果和按钮操作。</p>
+              </div>
+            </template>
             <button type="submit" class="device-modal__submit">
               添加设备
             </button>

@@ -35,7 +35,7 @@ const schemas = {
   // 设备相关
   device: Joi.object({
     name: Joi.string().min(1).max(50).required(),
-    providerType: Joi.string().valid('bark').required(),
+    providerType: Joi.string().valid('bark', 'feishu').required(),
     providerConfig: Joi.object().required(),
     isDefault: Joi.boolean().optional(),
     isActive: Joi.boolean().optional()

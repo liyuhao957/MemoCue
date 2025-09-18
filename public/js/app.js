@@ -66,8 +66,12 @@ function memoCueApp() {
 
     deviceForm: {
       name: '',
+      providerType: 'bark',
       server: 'https://api.day.app',
-      key: ''
+      key: '',
+      webhookUrl: '',
+      secret: '',
+      messageType: 'auto'
     },
 
     categoryForm: {
@@ -340,6 +344,10 @@ function memoCueApp() {
     // ===== 设备管理方法（调用模块） =====
     async addDevice() {
       await DeviceManager.addDevice(this);
+    },
+
+    onProviderTypeChange() {
+      DeviceManager.onProviderTypeChange(this);
     },
 
     async testDevice(deviceId) {

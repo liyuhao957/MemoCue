@@ -3,13 +3,26 @@ window.DeviceManager = {
   // 添加设备
   async addDevice(app) {
     try {
-      const data = {
-        name: app.deviceForm.name,
-        providerType: 'bark',
-        providerConfig: {
+      let providerConfig = {};
+
+      // 根据提供者类型构建配置
+      if (app.deviceForm.providerType === 'bark') {
+        providerConfig = {
           server: app.deviceForm.server,
           key: app.deviceForm.key
-        },
+        };
+      } else if (app.deviceForm.providerType === 'feishu') {
+        providerConfig = {
+          webhookUrl: app.deviceForm.webhookUrl,
+          secret: app.deviceForm.secret || '',
+          messageType: app.deviceForm.messageType || 'auto'
+        };
+      }
+
+      const data = {
+        name: app.deviceForm.name,
+        providerType: app.deviceForm.providerType || 'bark',
+        providerConfig: providerConfig,
         isDefault: app.devices.length === 0
       };
 
@@ -59,8 +72,28 @@ window.DeviceManager = {
   resetDeviceForm(app) {
     app.deviceForm = {
       name: '',
+      providerType: 'bark',
       server: 'https://api.day.app',
-      key: ''
+      key: '',
+      webhookUrl: '',
+      secret: '',
+      messageType: 'auto'
     };
+  },
+
+  // 提供者类型改变处理
+  onProviderTypeChange(app) {
+    // 清空特定字段
+    if (app.deviceForm.providerType === 'bark') {
+      app.deviceForm.webhookUrl = '';
+      app.deviceForm.secret = '';
+      app.deviceForm.messageType = 'auto';
+      if (!app.deviceForm.server) {
+        app.deviceForm.server = 'https://api.day.app';
+      }
+    } else if (app.deviceForm.providerType === 'feishu') {
+      app.deviceForm.server = '';
+      app.deviceForm.key = '';
+    }
   }
 };

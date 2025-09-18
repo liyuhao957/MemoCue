@@ -1,11 +1,13 @@
 const BarkProvider = require('./bark-provider');
+const FeishuProvider = require('./feishu-provider');
 const logger = require('../utils/logger');
 
 class ProviderFactory {
   constructor() {
     // 注册可用的推送提供者
     this.providers = {
-      'bark': BarkProvider
+      'bark': BarkProvider,
+      'feishu': FeishuProvider
       // 未来可添加更多提供者:
       // 'wechat': WechatProvider,
       // 'dingtalk': DingtalkProvider,
