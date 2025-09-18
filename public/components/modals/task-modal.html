@@ -33,10 +33,16 @@
             <h3 class="section-title">基础信息</h3>
             <div class="form-stack">
               <div class="form-field">
-                <label class="label-modern">标题</label>
-                <input type="text" x-model="taskForm.title" required
+                <label class="label-modern">
+                  标题
+                  <span class="text-xs text-gray-500 ml-2" x-text="`${UIUtils.getCharLength(taskForm.title)}/28`"></span>
+                </label>
+                <input type="text"
+                       x-model="taskForm.title"
+                       @input="taskForm.title = UIUtils.limitInputLength($event.target.value, 28)"
+                       required
                        class="input-modern"
-                       placeholder="输入提醒标题">
+                       placeholder="输入提醒标题（最多14个汉字或28个字符）">
               </div>
               <div class="form-field">
                 <label class="label-modern">内容</label>

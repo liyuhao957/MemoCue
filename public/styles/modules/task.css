@@ -162,23 +162,24 @@
   }
 
   .drag-handle {
-    opacity: 0;
+    opacity: 0.7;  /* 改为一直显示，默认0.7的透明度 */
     transition: all 0.3s ease;
     padding: 4px;
     border-radius: 6px;
     position: relative;
+    background-color: rgba(59, 130, 246, 0.05);  /* 添加淡蓝色背景 */
   }
 
   .task-item:hover .drag-handle {
-    opacity: 0.6;
+    opacity: 0.8;  /* 悬停时稍微增加透明度 */
     background-color: rgba(59, 130, 246, 0.1);
-    transform: scale(1.1);
+    transform: scale(1.05);  /* 略微缩小缩放效果 */
   }
 
   .task-item:hover .drag-handle:hover {
     opacity: 1;
     background-color: rgba(59, 130, 246, 0.2);
-    transform: scale(1.2);
+    transform: scale(1.15);  /* 略微减小缩放效果 */
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
 

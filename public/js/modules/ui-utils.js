@@ -125,5 +125,47 @@ window.UIUtils = {
       return device.providerType === 'bark' ? '📱' : '🤖';
     }
     return '❓';
+  },
+
+  // 计算字符长度（汉字算2个，英文算1个）
+  getCharLength(str) {
+    if (!str) return 0;
+    let length = 0;
+    for (let i = 0; i < str.length; i++) {
+      const charCode = str.charCodeAt(i);
+      // 判断是否为中文字符（包括中文标点）
+      if ((charCode >= 0x4e00 && charCode <= 0x9fff) || // 中文字符
+          (charCode >= 0x3000 && charCode <= 0x303f) || // 中文标点
+          (charCode >= 0xff00 && charCode <= 0xffef)) { // 全角字符
+        length += 2;
+      } else {
+        length += 1;
+      }
+    }
+    return length;
+  },
+
+  // 限制输入长度（考虑中文字符）
+  limitInputLength(str, maxByteLength) {
+    if (!str) return '';
+    let byteLength = 0;
+    let result = '';
+
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i];
+      const charCode = char.charCodeAt(0);
+      const charByteLength = ((charCode >= 0x4e00 && charCode <= 0x9fff) ||
+                              (charCode >= 0x3000 && charCode <= 0x303f) ||
+                              (charCode >= 0xff00 && charCode <= 0xffef)) ? 2 : 1;
+
+      if (byteLength + charByteLength > maxByteLength) {
+        break;
+      }
+
+      result += char;
+      byteLength += charByteLength;
+    }
+
+    return result;
   }
 };
