@@ -51,10 +51,11 @@ class FeishuProvider extends PushProvider {
 
   // 生成签名（用于安全验证）
   generateSignature(timestamp, secret) {
+    // 飞书签名算法：使用 secret 作为密钥，timestamp\nsecret 作为消息
     const stringToSign = `${timestamp}\n${secret}`;
     const signature = crypto
-      .createHmac('sha256', stringToSign)
-      .update('')
+      .createHmac('sha256', secret)
+      .update(stringToSign)
       .digest('base64');
     return signature;
   }
@@ -73,13 +74,15 @@ class FeishuProvider extends PushProvider {
   buildRichTextMessage(message) {
     const elements = [];
 
-    // 标题
+    // 标题 - 使用正确的样式对象格式
     if (message.title) {
       elements.push([
         {
           tag: 'text',
           text: message.title,
-          style: ['bold']
+          style: {
+            bold: true
+          }
         }
       ]);
     }
