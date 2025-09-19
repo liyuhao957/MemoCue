@@ -77,7 +77,7 @@
                   <div class="flex-1">
                     <div class="flex items-center gap-2">
                       <span class="text-xs" x-text="log.status === 'success' ? '✅' : '❌'"></span>
-                      <span class="font-medium text-sm" x-text="log.taskTitle"></span>
+                      <span class="font-medium text-sm" x-text="UIUtils.displayTitle(log.taskTitle)" :title="log.taskTitle"></span>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
                       <span x-text="log.deviceName"></span>

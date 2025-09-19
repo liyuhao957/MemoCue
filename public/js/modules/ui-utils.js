@@ -77,7 +77,147 @@ window.UIUtils = {
     }, 3000);
   },
 
-  // 截断文本
+  // 按字节截断文本（中文2字节，英文1字节，正确处理emoji和代理对）
+  truncateByBytes(str, maxBytes, addEllipsis = true) {
+    if (!str) return '';
+
+    // 优先使用 Intl.Segmenter 进行字素簇级分割（更准确）
+    let segments;
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+      try {
+        const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' });
+        segments = Array.from(segmenter.segment(str), seg => seg.segment);
+      } catch (e) {
+        // 降级到 Array.from
+        segments = Array.from(str);
+      }
+    } else {
+      // 降级方案：使用 Array.from（处理代理对）
+      segments = Array.from(str);
+    }
+
+    let bytes = 0;
+    let result = [];
+    let truncated = false;
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      // 计算字符宽度（显示宽度近似）
+      let segmentBytes = this.getSegmentWidth(segment);
+
+      if (bytes + segmentBytes > maxBytes) {
+        truncated = true;
+        break;
+      }
+
+      bytes += segmentBytes;
+      result.push(segment);
+    }
+
+    // 清理末尾的 ZWJ 和变体选择符
+    let finalText = result.join('');
+    if (truncated) {
+      // 检查并移除末尾的不可见字符
+      finalText = this.cleanTrailingInvisible(finalText);
+      if (addEllipsis) {
+        return finalText + '...';
+      }
+    }
+
+    return finalText;
+  },
+
+  // 计算字符段宽度
+  getSegmentWidth(segment) {
+    // 默认宽度
+    let width = 1;
+
+    // 获取第一个码点（用于判断字符类型）
+    const firstChar = segment.charAt(0);
+    const code = firstChar.charCodeAt(0);
+
+    // CJK 字符、全角字符等占 2 个宽度
+    if ((code >= 0x4e00 && code <= 0x9fff) || // CJK统一汉字
+        (code >= 0x3000 && code <= 0x303f) || // 中文标点
+        (code >= 0xff00 && code <= 0xffef) || // 全角字符
+        (code >= 0x3040 && code <= 0x309f) || // 平假名
+        (code >= 0x30a0 && code <= 0x30ff) || // 片假名
+        (code >= 0xac00 && code <= 0xd7af)) { // 韩文
+      width = 2;
+    }
+
+    // Emoji 检测（兼容性更好的方式）
+    if (this.isEmoji(segment)) {
+      width = 2;
+    }
+
+    return width;
+  },
+
+  // 检测是否为 Emoji（兼容性方案）
+  isEmoji(str) {
+    // 首先尝试使用 Unicode 属性类
+    try {
+      if (/\p{Emoji}/u.test(str)) {
+        return true;
+      }
+    } catch (e) {
+      // 不支持 Unicode 属性类，使用备用方案
+    }
+
+    // 备用方案：基础 emoji 范围检测
+    const emojiRanges = [
+      /[\u{1F300}-\u{1F9FF}]/u, // 杂项符号和图形
+      /[\u{1F600}-\u{1F64F}]/u, // 表情符号
+      /[\u{1F680}-\u{1F6FF}]/u, // 交通和地图符号
+      /[\u{2600}-\u{26FF}]/u,   // 杂项符号
+      /[\u{2700}-\u{27BF}]/u,   // 印刷符号
+      /[\u{1F900}-\u{1F9FF}]/u, // 补充符号和图形
+      /[\u{1FA70}-\u{1FAFF}]/u  // 符号和图形扩展-A
+    ];
+
+    return emojiRanges.some(range => range.test(str));
+  },
+
+  // 清理末尾的不可见字符（ZWJ、变体选择符等）
+  cleanTrailingInvisible(str) {
+    if (!str) return str;
+
+    // 需要清理的不可见字符
+    const invisibleChars = [
+      '\u200D', // Zero Width Joiner (ZWJ)
+      '\uFE0F', // Variation Selector-16 (VS16)
+      '\uFE0E', // Variation Selector-15 (VS15)
+      '\u200C', // Zero Width Non-Joiner (ZWNJ)
+      '\u2060', // Word Joiner
+      '\uFEFF'  // Zero Width No-Break Space
+    ];
+
+    // 从末尾开始清理
+    let result = str;
+    while (result.length > 0) {
+      const lastChar = result[result.length - 1];
+      if (invisibleChars.includes(lastChar)) {
+        result = result.slice(0, -1);
+      } else {
+        break;
+      }
+    }
+
+    return result;
+  },
+
+  // 显示标题（最多24字符，12个中文）
+  displayTitle(title) {
+    return this.truncateByBytes(title, 24);
+  },
+
+  // 显示内容（最多58字符，29个中文）
+  displayContent(content) {
+    return this.truncateByBytes(content, 58);
+  },
+
+  // 截断文本（兼容旧版）
   truncateText(text, maxLength = 18) {
     if (!text) return '';
     if (text.length <= maxLength) return text;
@@ -127,45 +267,31 @@ window.UIUtils = {
     return '❓';
   },
 
-  // 计算字符长度（汉字算2个，英文算1个）
+  // 计算显示宽度（中文/全角/Emoji 计 2，英文/半角计 1）
   getCharLength(str) {
     if (!str) return 0;
+
+    // 优先使用 Intl.Segmenter 进行字素簇级分割
+    let segments;
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+      try {
+        const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' });
+        segments = Array.from(segmenter.segment(str), seg => seg.segment);
+      } catch (e) {
+        segments = Array.from(str);
+      }
+    } else {
+      segments = Array.from(str);
+    }
+
     let length = 0;
-    for (let i = 0; i < str.length; i++) {
-      const charCode = str.charCodeAt(i);
-      // 判断是否为中文字符（包括中文标点）
-      if ((charCode >= 0x4e00 && charCode <= 0x9fff) || // 中文字符
-          (charCode >= 0x3000 && charCode <= 0x303f) || // 中文标点
-          (charCode >= 0xff00 && charCode <= 0xffef)) { // 全角字符
-        length += 2;
-      } else {
-        length += 1;
-      }
+    for (const segment of segments) {
+      length += this.getSegmentWidth(segment);
     }
+
     return length;
-  },
-
-  // 限制输入长度（考虑中文字符）
-  limitInputLength(str, maxByteLength) {
-    if (!str) return '';
-    let byteLength = 0;
-    let result = '';
-
-    for (let i = 0; i < str.length; i++) {
-      const char = str[i];
-      const charCode = char.charCodeAt(0);
-      const charByteLength = ((charCode >= 0x4e00 && charCode <= 0x9fff) ||
-                              (charCode >= 0x3000 && charCode <= 0x303f) ||
-                              (charCode >= 0xff00 && charCode <= 0xffef)) ? 2 : 1;
-
-      if (byteLength + charByteLength > maxByteLength) {
-        break;
-      }
-
-      result += char;
-      byteLength += charByteLength;
-    }
-
-    return result;
   }
+
+  // [已废弃] limitInputLength 函数已移除
+  // 输入不再限制长度，仅在显示时使用 truncateByBytes/displayTitle/displayContent
 };

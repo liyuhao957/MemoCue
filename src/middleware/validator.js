@@ -5,8 +5,8 @@ const logger = require('../utils/logger');
 const schemas = {
   // 任务相关
   task: Joi.object({
-    title: Joi.string().min(1).max(100).required(),
-    content: Joi.string().max(500).allow('').optional(),
+    title: Joi.string().min(1).max(1000).required(),  // 放宽到 1000 字符，支持长标题
+    content: Joi.string().max(5000).allow('').optional(),  // 放宽到 5000 字符，支持详细内容
     deviceId: Joi.string().uuid().required(),
     categoryId: Joi.string().required(),
     schedule: Joi.object().required(),
@@ -19,8 +19,8 @@ const schemas = {
   }),
 
   taskUpdate: Joi.object({
-    title: Joi.string().min(1).max(100).optional(),
-    content: Joi.string().max(500).allow('').optional(),
+    title: Joi.string().min(1).max(1000).optional(),  // 与创建保持一致
+    content: Joi.string().max(5000).allow('').optional(),  // 与创建保持一致
     deviceId: Joi.string().uuid().optional(),
     categoryId: Joi.string().optional(),
     schedule: Joi.object().optional(),
@@ -66,8 +66,8 @@ const schemas = {
   // 推送测试
   pushTest: Joi.object({
     deviceId: Joi.string().uuid().required(),
-    title: Joi.string().min(1).max(100).required(),
-    content: Joi.string().max(500).allow('').optional(),
+    title: Joi.string().min(1).max(1000).required(),  // 测试也支持长文本
+    content: Joi.string().max(5000).allow('').optional(),
     priority: Joi.number().valid(0, 1, 2).optional(),
     sound: Joi.string().max(50).optional()
   }),
