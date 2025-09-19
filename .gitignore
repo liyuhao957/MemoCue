@@ -11,7 +11,10 @@ package-lock.json
 data/
 *.json
 !package.json
+!package-lock.json
 !tsconfig.json
+!nodemon.json
+!tailwind.config.json
 
 # Logs
 logs/

@@ -1,0 +1,22 @@
+{
+  "watch": [
+    "src",
+    "scripts",
+    "config"
+  ],
+  "watchOptions": {
+    "ignoreInitial": true
+  },
+  "ext": "js,json",
+  "ignore": [
+    "data/**/*",
+    "*.log",
+    "public/styles.css",
+    "public/styles.min.css",
+    "public/css/*.css",
+    "public/dist/**",
+    "node_modules/**",
+    ".git/**"
+  ],
+  "delay": "1000"
+}

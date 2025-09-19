@@ -1,7 +1,7 @@
 {
-  "name": "memocue-lite",
+  "name": "memocue",
   "version": "1.0.0",
-  "description": "轻量级定时提醒服务",
+  "description": "智能定时提醒服务 - 支持 Bark 和飞书推送",
   "main": "src/server.js",
   "scripts": {
     "start": "nodemon src/server.js",
@@ -38,6 +38,6 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "author": "",
+  "author": "liyuhao957",
   "license": "MIT"
 }
