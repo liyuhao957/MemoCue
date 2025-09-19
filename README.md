@@ -88,7 +88,7 @@
 git clone https://github.com/liyuhao957/memocue.git
 cd memocue && npm install
 
-# 2. 初始化数据
+# 2. 初始化数据（自动生成配置和加密密钥）
 npm run data:init
 
 # 3. 启动服务
@@ -97,6 +97,22 @@ npm start
 # 4. 打开浏览器
 # 访问 http://localhost:3000
 ```
+
+#### 数据初始化说明
+
+`npm run data:init` 命令会自动完成以下配置：
+
+- **创建数据目录**：生成 `data/` 和 `data/logs/` 目录
+- **初始化数据文件**：
+  - `tasks.json` - 任务存储
+  - `devices.json` - 设备配置
+  - `categories.json` - 默认分类（默认、工作、个人、重要）
+- **生成 .env 文件**：
+  - 自动生成 32 字节随机加密密钥
+  - 配置服务端口、时区、日志级别等
+  - 如文件已存在则跳过，不会覆盖
+
+⚠️ **注意**：此命令只需在首次安装时运行一次
 
 
 ### 配置推送
@@ -127,13 +143,28 @@ npm start
 
 ## ⚙️ 配置说明
 
-创建 `.env` 文件设置环境变量：
+### 环境变量配置
+
+`.env` 文件可通过 `npm run data:init` 自动生成，也可手动创建：
 
 ```bash
 PORT=3000  # 服务端口
-ENCRYPTION_SECRET=your-random-32-character-string-here  # 加密密钥（强烈推荐）
+ENCRYPTION_SECRET=your-random-32-character-string-here  # 加密密钥（自动生成或手动设置）
 LOG_RETENTION_DAYS=2  # 日志保留天数（默认2天）
+TZ=Asia/Shanghai  # 时区设置
+LOG_LEVEL=info  # 日志级别：debug/info/warn/error
 ```
+
+#### 关于加密密钥
+
+`ENCRYPTION_SECRET` 用于加密存储推送设备的敏感信息（如 Bark 密钥、飞书 Webhook），防止配置泄露：
+
+- **自动生成**：运行 `npm run data:init` 会生成一个安全的随机密钥
+- **手动设置**：可以使用任意 32 字符以上的随机字符串
+- **安全建议**：
+  - 个人本地使用可保持默认
+  - 服务器部署强烈建议设置独特密钥
+  - 切勿将 `.env` 文件提交到版本控制
 
 ### 日志清理
 - **自动清理**：每2天凌晨2点自动清理过期日志
