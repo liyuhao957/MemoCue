@@ -10,7 +10,7 @@ const sseManager = require('./sse-manager');
 
 class LogStore {
   constructor() {
-    this.maxLogs = 1000; // 最多保存1000条记录
+    this.maxLogs = 500; // 最多保存500条记录
     this.logsFile = 'logs.json';
   }
 
@@ -21,9 +21,7 @@ class LogStore {
    */
   async recordExecution(logEntry) {
     try {
-      const logs = await this.getLogs();
-
-      // 构建完整的日志记录
+      // 构建完整的日志记录（先生成，后续在锁内更新文件）
       const record = {
         id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         taskId: logEntry.taskId,
@@ -38,15 +36,14 @@ class LogStore {
         duration: logEntry.duration || 0 // 推送耗时（毫秒）
       };
 
-      // 添加新记录到开头
-      logs.unshift(record);
+      // 使用原子更新，避免并发写入丢失记录
+      await fileStore.updateJson(this.logsFile, (current = []) => {
+        const next = Array.isArray(current) ? current.slice(0) : [];
+        next.unshift(record);
+        if (next.length > this.maxLogs) next.splice(this.maxLogs);
+        return next;
+      }, []);
 
-      // 限制日志数量
-      if (logs.length > this.maxLogs) {
-        logs.splice(this.maxLogs);
-      }
-
-      await fileStore.writeJson(this.logsFile, logs);
       logger.debug('执行日志已记录', record);
 
       // 实时推送日志到前端

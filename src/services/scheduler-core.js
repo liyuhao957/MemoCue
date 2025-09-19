@@ -6,6 +6,8 @@
 
 const logger = require('../utils/logger');
 const { SCHEDULER } = require('../config/constants');
+const cron = require('node-cron');
+const logCleaner = require('./log-cleaner');
 
 class SchedulerCore {
   constructor() {
@@ -13,6 +15,7 @@ class SchedulerCore {
     this.timezone = process.env.TZ || SCHEDULER.CRON_TIMEZONE;
     this.isRunning = false;
     this.checkInterval = null;
+    this.logCleanupJob = null;
   }
 
   /**
@@ -27,6 +30,17 @@ class SchedulerCore {
     logger.info('Starting scheduler', { timezone: this.timezone });
     this.isRunning = true;
 
+    // 启动时清理残留的临时文件
+    try {
+      const tempStats = await logCleaner.cleanTempFiles();
+      if (tempStats.removed > 0) {
+        logger.info(`Cleaned ${tempStats.removed} temp files on startup`);
+      }
+    } catch (error) {
+      // 清理失败不影响启动
+      console.error('Startup temp cleanup failed:', error.message);
+    }
+
     await loadTasksCallback();
 
     // 每分钟检查一次需要执行的任务
@@ -35,6 +49,10 @@ class SchedulerCore {
     }, 60000);
 
     checkTasksCallback();
+
+    // 启动日志清理任务（每2天凌晨2点执行）
+    this.startLogCleanup();
+
     logger.info('Scheduler started successfully');
   }
 
@@ -58,6 +76,12 @@ class SchedulerCore {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+    }
+
+    // 停止日志清理任务
+    if (this.logCleanupJob) {
+      this.logCleanupJob.stop();
+      this.logCleanupJob = null;
     }
 
     this.isRunning = false;
@@ -143,6 +167,31 @@ class SchedulerCore {
    */
   getIsRunning() {
     return this.isRunning;
+  }
+
+  /**
+   * 启动日志清理定时任务
+   * 每2天凌晨2点执行一次
+   */
+  startLogCleanup() {
+    try {
+      // Cron表达式: 0 2 */2 * * 表示每2天的凌晨2点
+      this.logCleanupJob = cron.schedule('0 2 */2 * *', async () => {
+        try {
+          await logCleaner.cleanAll();
+          // 清理操作静默执行，不记录日志
+        } catch (error) {
+          // 错误也静默处理，避免干扰正常业务
+          console.error('Log cleanup failed:', error.message);
+        }
+      }, {
+        scheduled: true,
+        timezone: this.timezone
+      });
+    } catch (error) {
+      // 初始化失败不影响主服务
+      console.error('Failed to start log cleanup job:', error.message);
+    }
   }
 }
 

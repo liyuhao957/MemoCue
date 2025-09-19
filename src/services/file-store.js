@@ -102,8 +102,22 @@ class FileStore {
         // 文件不存在
       }
 
-      // 读取当前数据
-      const currentData = await this.readJson(filename, defaultValue);
+      // 直接读取文件，避免调用 readJson（防止锁重入和缓存问题）
+      let currentData;
+      try {
+        const data = await fs.readFile(filepath, 'utf8');
+        currentData = JSON.parse(data);
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          // 文件不存在，使用默认值
+          currentData = defaultValue;
+        } else if (error instanceof SyntaxError) {
+          // JSON 解析失败，使用默认值
+          currentData = defaultValue;
+        } else {
+          throw error;
+        }
+      }
 
       // 应用更新
       const newData = await updateFn(currentData);
