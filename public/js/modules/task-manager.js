@@ -33,13 +33,19 @@ window.TaskManager = {
       categoryId: task.categoryId,
       schedule: {
         ...task.schedule,
+        // 深拷贝days数组，避免引用污染
+        days: task.schedule.days ? [...task.schedule.days] : [],
         // 确保重复发送相关字段存在
         enableRepeat: task.schedule.enableRepeat || false,
         repeatCount: task.schedule.repeatCount || 1,
         repeatInterval: task.schedule.repeatInterval || 5
       },
       priority: task.priority || 0,
-      sound: task.sound || 'default'
+      sound: task.sound || 'default',
+      url: task.url || '',
+      // 兼容旧数据：如果没有 barkSound，使用 sound 字段作为默认值
+      barkSound: task.barkSound || task.sound || 'default',
+      barkUrl: task.barkUrl || ''
     };
     app.openModal('task');
   },
@@ -48,6 +54,18 @@ window.TaskManager = {
   async saveTask(app) {
     try {
       const data = { ...app.taskForm };
+
+      // 如果不是飞书设备，重置飞书特有字段
+      if (!app.isFeishuDevice()) {
+        data.priority = 0;  // 默认优先级
+        data.url = '';      // 清空URL
+      }
+
+      // 如果不是 Bark 设备，重置 Bark 特有字段
+      if (!app.isBarkDevice()) {
+        data.barkSound = 'default';  // 默认声音
+        data.barkUrl = '';           // 清空URL
+      }
 
       // 清理调度配置
       const schedule = {};
@@ -183,7 +201,10 @@ window.TaskManager = {
         repeatInterval: 5
       },
       priority: 0,
-      sound: 'default'
+      sound: 'default',
+      url: '',
+      barkSound: 'default',
+      barkUrl: ''
     };
   }
 };

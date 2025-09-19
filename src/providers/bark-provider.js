@@ -69,8 +69,10 @@ class BarkProvider extends PushProvider {
       params.level = 'passive';
     }
 
-    // 设置声音
-    if (message.sound && message.sound !== 'default') {
+    // 设置声音（优先使用 barkSound，然后是 sound）
+    if (message.barkSound && message.barkSound !== 'default') {
+      params.sound = message.barkSound;
+    } else if (message.sound && message.sound !== 'default') {
       params.sound = message.sound;
     }
 
@@ -84,8 +86,10 @@ class BarkProvider extends PushProvider {
       params.group = message.group;
     }
 
-    // 设置URL
-    if (message.url) {
+    // 设置URL（优先使用 barkUrl，然后是 url）
+    if (message.barkUrl) {
+      params.url = message.barkUrl;
+    } else if (message.url) {
       params.url = message.url;
     }
 

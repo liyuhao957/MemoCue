@@ -253,6 +253,35 @@ function memoCueApp() {
       await TaskManager.testPush(task, this);
     },
 
+    // 获取当前选中设备的类型
+    getSelectedDeviceType() {
+      if (!this.taskForm.deviceId) return null;
+      const device = this.devices.find(d => d.id === this.taskForm.deviceId);
+      return device ? device.providerType : null;
+    },
+
+    // 判断当前选中的是否为飞书设备
+    isFeishuDevice() {
+      return this.getSelectedDeviceType() === 'feishu';
+    },
+
+    // 判断当前选中的是否为 Bark 设备
+    isBarkDevice() {
+      return this.getSelectedDeviceType() === 'bark';
+    },
+
+    // 判断任务是否使用飞书设备
+    isTaskUsingFeishu(task) {
+      const device = this.devices.find(d => d.id === task.deviceId);
+      return device ? device.providerType === 'feishu' : false;
+    },
+
+    // 判断任务是否使用 Bark 设备
+    isTaskUsingBark(task) {
+      const device = this.devices.find(d => d.id === task.deviceId);
+      return device ? device.providerType === 'bark' : false;
+    },
+
     // ===== 设备相关辅助方法 =====
     getDeviceName(task) {
       return UIUtils.getDeviceName(this.devices, task);

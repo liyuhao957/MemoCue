@@ -75,7 +75,28 @@
             </button>
           </div>
           <div class="task-item__text">
-            <h4 class="task-item__title" x-text="UIUtils.displayTitle(task.title)" :title="task.title"></h4>
+            <div class="flex items-center gap-2">
+              <h4 class="task-item__title" x-text="UIUtils.displayTitle(task.title)" :title="task.title"></h4>
+              <!-- 飞书设备专有：优先级标记 -->
+              <template x-if="isTaskUsingFeishu(task) && task.priority === 2">
+                <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800" title="高优先级">
+                  🔴
+                </span>
+              </template>
+              <template x-if="isTaskUsingFeishu(task) && task.priority === 1">
+                <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800" title="中优先级">
+                  🟠
+                </span>
+              </template>
+              <!-- 飞书设备专有：URL链接图标 -->
+              <template x-if="isTaskUsingFeishu(task) && task.url">
+                <a :href="task.url" target="_blank" class="inline-flex items-center text-blue-500 hover:text-blue-700" title="查看链接">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                </a>
+              </template>
+            </div>
             <p class="task-item__desc" x-text="UIUtils.displayContent(task.content)" :title="task.content"></p>
           </div>
         </div>

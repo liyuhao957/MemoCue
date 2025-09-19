@@ -15,6 +15,9 @@ const schemas = {
     sound: Joi.string().max(50).optional(),
     icon: Joi.string().max(100).optional(),
     group: Joi.string().max(50).optional(),
+    url: Joi.string().uri().allow('').optional(),  // 添加URL字段验证
+    barkSound: Joi.string().max(50).optional(),  // Bark 特定声音
+    barkUrl: Joi.string().uri().allow('').optional(),  // Bark 特定URL
     maxRetries: Joi.number().min(0).max(10).optional()
   }),
 
@@ -29,6 +32,9 @@ const schemas = {
     sound: Joi.string().max(50).optional(),
     icon: Joi.string().max(100).optional(),
     group: Joi.string().max(50).optional(),
+    url: Joi.string().uri().allow('').optional(),  // 添加URL字段验证
+    barkSound: Joi.string().max(50).optional(),  // Bark 特定声音
+    barkUrl: Joi.string().uri().allow('').optional(),  // Bark 特定URL
     maxRetries: Joi.number().min(0).max(10).optional()
   }),
 
@@ -69,7 +75,10 @@ const schemas = {
     title: Joi.string().min(1).max(1000).required(),  // 测试也支持长文本
     content: Joi.string().max(5000).allow('').optional(),
     priority: Joi.number().valid(0, 1, 2).optional(),
-    sound: Joi.string().max(50).optional()
+    sound: Joi.string().max(50).optional(),
+    url: Joi.string().uri().allow('').optional(),
+    barkSound: Joi.string().max(50).optional(),
+    barkUrl: Joi.string().uri().allow('').optional()
   }),
 
   // 批量操作

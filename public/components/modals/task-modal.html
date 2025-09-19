@@ -56,6 +56,7 @@
               <div class="form-field">
                 <label class="label-modern">推送设备</label>
                 <select x-model="taskForm.deviceId" required
+                        @change="$nextTick(() => {})"
                         class="select-modern">
                   <option value="">选择设备</option>
                   <template x-for="device in devices" :key="device.id">
@@ -71,6 +72,74 @@
                     <option :value="category.id" x-text="category.name"></option>
                   </template>
                 </select>
+              </div>
+              <!-- 飞书特有功能：优先级设置 -->
+              <div class="form-field" x-show="isFeishuDevice()" x-cloak>
+                <label class="label-modern">优先级</label>
+                <select x-model.number="taskForm.priority"
+                        class="select-modern">
+                  <option value="0">🔵 普通</option>
+                  <option value="1">🟠 中等</option>
+                  <option value="2">🔴 高</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">飞书卡片消息将根据优先级显示不同颜色</p>
+              </div>
+              <!-- 飞书特有功能：链接URL -->
+              <div class="form-field" x-show="isFeishuDevice()" x-cloak>
+                <label class="label-modern">
+                  链接 URL
+                  <span class="text-xs text-gray-500 ml-1">（可选）</span>
+                </label>
+                <input type="url"
+                       x-model="taskForm.url"
+                       class="input-modern"
+                       placeholder="https://example.com/details">
+                <p class="text-xs text-gray-500 mt-1">飞书卡片消息中将显示"查看详情"按钮</p>
+              </div>
+              <!-- Bark 特有功能：声音选项 -->
+              <div class="form-field" x-show="isBarkDevice()" x-cloak>
+                <label class="label-modern">提示音</label>
+                <select x-model="taskForm.barkSound"
+                        class="select-modern">
+                  <option value="default">默认</option>
+                  <option value="alarm">⏰ 闹钟</option>
+                  <option value="bell">🔔 铃声</option>
+                  <option value="bloom">🌸 绽放</option>
+                  <option value="calypso">🎵 卡里普索</option>
+                  <option value="chime">🎐 风铃</option>
+                  <option value="chord">🎹 和弦</option>
+                  <option value="crystal">💎 水晶</option>
+                  <option value="fanfare">🎺 号角</option>
+                  <option value="glass">🥃 玻璃</option>
+                  <option value="goto">➡️ 前往</option>
+                  <option value="minuet">🎼 小步舞曲</option>
+                  <option value="multiwayinvitation">📞 多方邀请</option>
+                  <option value="newmail">📧 新邮件</option>
+                  <option value="newsflash">📰 快讯</option>
+                  <option value="noir">🌙 夜曲</option>
+                  <option value="paymentsuccess">💰 支付成功</option>
+                  <option value="shake">📳 震动</option>
+                  <option value="sherwoodforest">🌲 森林</option>
+                  <option value="spell">✨ 魔法</option>
+                  <option value="suspense">😰 悬疑</option>
+                  <option value="telegraph">📡 电报</option>
+                  <option value="tiptoes">👣 脚尖</option>
+                  <option value="typewriters">⌨️ 打字机</option>
+                  <option value="update">🔄 更新</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">选择推送通知的提示音</p>
+              </div>
+              <!-- Bark 特有功能：URL 跳转 -->
+              <div class="form-field" x-show="isBarkDevice()" x-cloak>
+                <label class="label-modern">
+                  跳转 URL
+                  <span class="text-xs text-gray-500 ml-1">（可选）</span>
+                </label>
+                <input type="url"
+                       x-model="taskForm.barkUrl"
+                       class="input-modern"
+                       placeholder="https://example.com">
+                <p class="text-xs text-gray-500 mt-1">点击通知时打开的链接</p>
               </div>
             </div>
           </section>

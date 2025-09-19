@@ -12,7 +12,7 @@ const router = express.Router();
 // 测试推送
 router.post('/test', validate('pushTest'), async (req, res, next) => {
   try {
-    const { deviceId, title, content, priority, sound } = req.body;
+    const { deviceId, title, content, priority, sound, url, barkSound, barkUrl } = req.body;
 
     // 获取设备
     const devices = await fileStore.readJson('devices.json', []);
@@ -25,12 +25,15 @@ router.post('/test', validate('pushTest'), async (req, res, next) => {
     // 获取推送提供者
     const provider = providerFactory.create(device.providerType);
 
-    // 发送推送
+    // 发送推送，包括 Bark 特定字段
     const message = {
       title,
       content,
       priority: priority || 0,
-      sound: sound || 'default'
+      sound: sound || 'default',
+      url,           // 通用 URL
+      barkSound,     // Bark 特定声音
+      barkUrl        // Bark 特定 URL
     };
 
     const result = await provider.send(device, message);
@@ -67,6 +70,10 @@ router.post('/:taskId', async (req, res, next) => {
       throw new NotFoundError('任务关联的设备不存在');
     }
 
+    // 获取分类信息（如果有）
+    const categories = await fileStore.readJson('categories.json', []);
+    const category = categories.find(c => c.id === task.categoryId);
+
     let result = null;
     let duration = 0;
     // 将 startTime 提到 try 块外，确保异常时也能计算耗时
@@ -76,14 +83,18 @@ router.post('/:taskId', async (req, res, next) => {
       // 获取推送提供者
       const provider = providerFactory.create(device.providerType);
 
-      // 发送推送
+      // 发送推送，包括 Bark 特定字段
       const message = {
         title: task.title,
         content: task.content,
         priority: task.priority,
         sound: task.sound,
+        barkSound: task.barkSound,  // Bark 特定声音
+        barkUrl: task.barkUrl,      // Bark 特定URL
         icon: task.icon,
-        group: task.group
+        group: task.group,
+        url: task.url,  // 添加URL字段，确保飞书卡片能显示"查看详情"按钮
+        categoryName: category ? category.name : undefined  // 添加分类名称，飞书卡片会显示
       };
 
       result = await provider.send(device, message);

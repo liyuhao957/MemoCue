@@ -115,15 +115,26 @@ class TaskExecutor {
         // 获取provider实例
         const provider = providerFactory.create(providerType);
 
-        // 将设备对象和消息传给provider
+        // 获取分类名称（如果需要）
+        let categoryName;
+        if (task.categoryId) {
+          const categories = await fileStore.readJson('categories.json', []);
+          const category = categories.find(c => c.id === task.categoryId);
+          categoryName = category ? category.name : undefined;
+        }
+
+        // 将设备对象和消息传给provider，包括 Bark 特定字段
         const result = await provider.send(device, {
           title: task.title,
           content: task.content,
           url: task.url,
           sound: task.sound,
+          barkSound: task.barkSound,  // Bark 特定声音
+          barkUrl: task.barkUrl,      // Bark 特定URL
           group: task.group,
           icon: task.icon,
-          priority: task.priority
+          priority: task.priority,
+          categoryName: categoryName  // 添加分类名称
         });
 
         // 计算耗时

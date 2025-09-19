@@ -33,7 +33,10 @@ class PushProvider {
       icon: message.icon,
       group: message.group,
       url: message.url,
-      badge: message.badge
+      badge: message.badge,
+      // Bark 特定字段
+      barkSound: message.barkSound,
+      barkUrl: message.barkUrl
     };
 
     return defaultMessage;
