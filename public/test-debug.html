@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoCue - 调试测试</title>
+
+  <!-- 配置文件必须最先加载 -->
+  <script>
+    // 模拟服务端注入配置
+    window.SERVER_CONFIG = {
+      BASE_PATH: '/memocue',
+      API_BASE_PATH: '/memocue'
+    };
+    console.log('[Test] SERVER_CONFIG set:', window.SERVER_CONFIG);
+  </script>
+  <script src="js/config.js"></script>
+
+  <!-- 使用本地库文件 -->
+  <script src="lib/dayjs.min.js"></script>
+  <script src="lib/dayjs-locale-zh-cn.js"></script>
+
+  <!-- 样式文件 -->
+  <link href="styles.min.css" rel="stylesheet">
+  <style>
+    [x-cloak] { display: none !important; }
+    .debug-info {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      font-family: monospace;
+      padding: 10px;
+      font-size: 12px;
+      z-index: 9999;
+      max-width: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body class="app-background text-gray-800">
+  <!-- 调试信息面板 -->
+  <div class="debug-info" id="debug-panel">
+    <h3 style="color:#fff;margin:0 0 10px">调试信息</h3>
+    <div id="debug-log"></div>
+  </div>
+
+  <div x-data="{ message: 'Alpine.js 已启动', count: 0 }" x-init="console.log('[Alpine] Component initialized')" class="min-h-screen relative flex flex-col p-8">
+
+    <h1 class="text-2xl font-bold mb-4">MemoCue 调试测试页面</h1>
+
+    <!-- 测试 Alpine.js 是否工作 -->
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <h2 class="text-lg font-bold mb-2">Alpine.js 测试</h2>
+      <p x-text="message"></p>
+      <button @click="count++" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">
+        点击次数: <span x-text="count"></span>
+      </button>
+    </div>
+
+    <!-- 组件容器 -->
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <h2 class="text-lg font-bold mb-2">组件加载测试</h2>
+      <div id="test-component-container" class="border-2 border-dashed border-gray-300 p-4">
+        等待组件加载...
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 组件加载器 -->
+  <script src="js/component-loader.js"></script>
+
+  <!-- Alpine.js -->
+  <script src="lib/alpine.min.js" defer></script>
+
+  <!-- 测试脚本 -->
+  <script>
+    // 调试日志函数
+    function debugLog(msg, data) {
+      const panel = document.getElementById('debug-log');
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.innerHTML = `<span style="color:#ff0">[${time}]</span> ${msg}`;
+      if (data) {
+        entry.innerHTML += '<br>' + JSON.stringify(data, null, 2);
+      }
+      panel.appendChild(entry);
+      console.log(msg, data || '');
+    }
+
+    // 监听页面加载
+    debugLog('页面加载开始');
+    debugLog('配置状态', {
+      BASE_PATH: window.APP_CONFIG?.BASE_PATH,
+      API_BASE_PATH: window.APP_CONFIG?.API_BASE_PATH
+    });
+
+    // 检查 Alpine 状态
+    window.addEventListener('alpine:init', () => {
+      debugLog('Alpine:init 事件触发');
+    });
+
+    window.addEventListener('alpine:initialized', () => {
+      debugLog('Alpine:initialized 事件触发');
+    });
+
+    // DOM 加载完成后测试组件加载
+    document.addEventListener('DOMContentLoaded', async function() {
+      debugLog('DOMContentLoaded 触发');
+
+      debugLog('Alpine 状态', {
+        Alpine: typeof window.Alpine,
+        deferLoadingAlpine: typeof window.deferLoadingAlpine,
+        __alpineComponentsReady: window.__alpineComponentsReady,
+        __alpineStarted: window.__alpineStarted,
+        __startAlpine: typeof window.__startAlpine
+      });
+
+      // 尝试加载一个简单的测试组件
+      try {
+        debugLog('开始加载测试组件');
+
+        // 创建一个简单的测试内容
+        const testContent = `
+          <div x-data="{ loaded: true }" class="p-4 bg-green-100 rounded">
+            <p x-show="loaded" class="text-green-700 font-bold">
+              ✅ 组件加载成功！Alpine.js 数据绑定正常工作。
+            </p>
+            <button @click="loaded = !loaded" class="mt-2 px-3 py-1 bg-green-500 text-white rounded text-sm">
+              切换显示
+            </button>
+          </div>
+        `;
+
+        // 插入测试内容
+        const container = document.getElementById('test-component-container');
+        container.innerHTML = testContent;
+        debugLog('测试组件已插入 DOM');
+
+        // 标记组件就绪
+        window.__alpineComponentsReady = true;
+
+        // 如果 Alpine 启动函数存在，调用它
+        if (typeof window.__startAlpine === 'function') {
+          debugLog('调用 __startAlpine()');
+          window.__startAlpine();
+        } else {
+          debugLog('等待 Alpine 自动启动');
+        }
+
+      } catch (error) {
+        debugLog('组件加载错误', error.message);
+      }
+    });
+
+    // 定期检查 Alpine 状态
+    let checkCount = 0;
+    const checkInterval = setInterval(() => {
+      checkCount++;
+      if (window.Alpine) {
+        debugLog(`Alpine 已加载 (第 ${checkCount} 次检查)`);
+        clearInterval(checkInterval);
+      } else if (checkCount > 20) {
+        debugLog(`Alpine 未能加载 (检查了 ${checkCount} 次)`);
+        clearInterval(checkInterval);
+      }
+    }, 500);
+  </script>
+</body>
+</html>

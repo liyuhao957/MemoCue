@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoCue - 简化版</title>
+
+  <script src="js/config.js"></script>
+  <link href="styles.min.css" rel="stylesheet">
+
+  <script src="lib/dayjs.min.js"></script>
+  <script src="lib/dayjs-locale-zh-cn.js"></script>
+
+  <!-- 使用简化的组件加载器 -->
+  <script src="js/component-loader-simple.js"></script>
+
+  <!-- 功能模块 -->
+  <script src="js/modules/data-loader.js"></script>
+  <script src="js/modules/task-manager.js"></script>
+  <script src="js/modules/device-manager.js"></script>
+  <script src="js/modules/category-manager.js"></script>
+  <script src="js/modules/ui-utils.js"></script>
+  <script src="js/modules/realtime-manager.js"></script>
+
+  <!-- 主应用文件 -->
+  <script src="js/app.js"></script>
+</head>
+<body class="app-background text-gray-800" x-cloak>
+
+  <div x-data="memoCueApp()" x-init="init()" class="min-h-screen relative flex flex-col">
+
+    <!-- 顶部导航栏 -->
+    <div id="navbar-container"></div>
+
+    <!-- 主内容区 -->
+    <main class="dashboard">
+      <div class="app-shell">
+        <div class="dashboard-layout flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(240px,300px)_1fr] lg:items-start lg:gap-10">
+          <!-- 侧边栏 -->
+          <div id="sidebar-container"></div>
+
+          <!-- 仪表盘内容和任务列表 -->
+          <div class="flex flex-col gap-8">
+            <div id="dashboard-content-container"></div>
+            <div id="task-list-container"></div>
+            </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 模态框容器 -->
+    <div id="task-modal-container"></div>
+    <div id="device-modal-container"></div>
+    <div id="category-modal-container"></div>
+
+    <!-- 消息提示容器 -->
+    <div id="message-toast-container"></div>
+
+  </div>
+
+  <script>
+    console.log('[Simple] Page loaded');
+
+    // 定义组件映射
+    const components = [
+      { selector: '#navbar-container', component: 'components/navbar.html' },
+      { selector: '#sidebar-container', component: 'components/sidebar.html' },
+      { selector: '#dashboard-content-container', component: 'components/dashboard-content.html' },
+      { selector: '#task-list-container', component: 'components/task-list.html' },
+      { selector: '#task-modal-container', component: 'components/modals/task-modal.html' },
+      { selector: '#device-modal-container', component: 'components/modals/device-modal.html' },
+      { selector: '#category-modal-container', component: 'components/modals/category-modal.html' },
+      { selector: '#message-toast-container', component: 'components/message-toast.html' }
+    ];
+
+    // 使用简化的串行加载
+    if (window.simpleComponentLoader) {
+      console.log('[Simple] Starting component loading');
+
+      window.simpleComponentLoader.insertComponentsSequentially(components, () => {
+        console.log('[Simple] All components processed');
+
+        // 加载 Alpine.js
+        console.log('[Simple] Loading Alpine.js');
+        const script = document.createElement('script');
+        script.src = window.APP_CONFIG ? window.APP_CONFIG.asset('lib/alpine.min.js') : 'lib/alpine.min.js';
+
+        script.onload = () => {
+          console.log('[Simple] Alpine.js loaded');
+        };
+
+        script.onerror = () => {
+          console.error('[Simple] Failed to load Alpine.js');
+        };
+
+        document.head.appendChild(script);
+      });
+    } else {
+      console.error('[Simple] Component loader not found');
+    }
+  </script>
+</body>
+</html>

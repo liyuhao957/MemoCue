@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Test</title>
+    <script src="lib/alpine.min.js" defer></script>
+</head>
+<body>
+    <h1>Alpine.js Test</h1>
+
+    <div x-data="{ message: 'Alpine is working!' }">
+        <p x-text="message"></p>
+    </div>
+
+    <script>
+        console.log('Script 1: Page loaded');
+
+        // 测试 Alpine.js 加载
+        document.addEventListener('alpine:init', () => {
+            console.log('Alpine:init event fired');
+        });
+
+        document.addEventListener('alpine:initialized', () => {
+            console.log('Alpine:initialized event fired');
+        });
+
+        // 检查 Alpine 状态
+        setTimeout(() => {
+            console.log('After 2s, Alpine:', typeof window.Alpine);
+        }, 2000);
+
+        setTimeout(() => {
+            console.log('After 5s, Alpine:', typeof window.Alpine);
+            if (window.Alpine) {
+                console.log('Alpine version:', window.Alpine.version);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

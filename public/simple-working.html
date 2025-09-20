@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoCue - 简化版</title>
+  <script src="lib/dayjs.min.js"></script>
+  <script src="lib/dayjs-locale-zh-cn.js"></script>
+  <link href="styles.min.css" rel="stylesheet">
+</head>
+<body class="app-background text-gray-800">
+  <div id="app" x-data="appData()" x-init="init()" class="min-h-screen">
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+      <div class="app-shell h-20 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="brand-badge">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-semibold text-gray-800">MemoCue</h1>
+            <p class="text-xs text-gray-500">智能提醒助手</p>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="dashboard">
+      <div class="app-shell">
+        <div class="mt-8">
+
+          <!-- 状态卡片 -->
+          <div class="card-modern p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">系统状态</h2>
+            <div x-show="loading" class="text-gray-500">加载中...</div>
+            <div x-show="!loading">
+              <p class="text-lg mb-2">✅ 系统正常运行</p>
+              <div class="grid grid-cols-3 gap-4 mt-4">
+                <div class="stat-card">
+                  <p class="text-gray-600">任务总数</p>
+                  <p class="text-2xl font-bold" x-text="tasks.length"></p>
+                </div>
+                <div class="stat-card">
+                  <p class="text-gray-600">设备数量</p>
+                  <p class="text-2xl font-bold" x-text="devices.length"></p>
+                </div>
+                <div class="stat-card">
+                  <p class="text-gray-600">分类数量</p>
+                  <p class="text-2xl font-bold" x-text="categories.length"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 任务列表 -->
+          <div class="card-modern p-6">
+            <h2 class="text-xl font-bold mb-4">任务列表</h2>
+            <div x-show="tasks.length === 0" class="text-gray-500">
+              暂无任务
+            </div>
+            <div x-show="tasks.length > 0" class="space-y-3">
+              <template x-for="task in tasks" :key="task.id">
+                <div class="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow">
+                  <h3 class="font-semibold" x-text="task.title"></h3>
+                  <p class="text-sm text-gray-600 mt-1" x-text="task.content"></p>
+                  <div class="flex gap-2 mt-2">
+                    <span class="badge badge-primary" x-text="task.enabled ? '启用' : '禁用'"></span>
+                    <span class="text-xs text-gray-500" x-text="'下次执行: ' + (task.nextPushAt || '未设置')"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // 配置Day.js
+    dayjs.locale('zh-cn');
+
+    // 定义应用数据
+    function appData() {
+      return {
+        loading: true,
+        tasks: [],
+        devices: [],
+        categories: [],
+
+        async init() {
+          console.log('初始化应用...');
+          await this.loadData();
+          this.loading = false;
+        },
+
+        async loadData() {
+          try {
+            // 加载任务
+            const tasksRes = await fetch('/memocue/api/tasks');
+            const tasksData = await tasksRes.json();
+            this.tasks = tasksData.data || [];
+            console.log('任务加载完成:', this.tasks.length);
+
+            // 加载设备
+            const devicesRes = await fetch('/memocue/api/devices');
+            const devicesData = await devicesRes.json();
+            this.devices = devicesData.data || [];
+            console.log('设备加载完成:', this.devices.length);
+
+            // 加载分类
+            const categoriesRes = await fetch('/memocue/api/categories');
+            const categoriesData = await categoriesRes.json();
+            this.categories = categoriesData || [];
+            console.log('分类加载完成:', this.categories.length);
+
+          } catch (error) {
+            console.error('加载数据失败:', error);
+          }
+        }
+      };
+    }
+  </script>
+
+  <!-- Alpine.js最后加载 -->
+  <script src="lib/alpine.min.js" defer></script>
+</body>
+</html>

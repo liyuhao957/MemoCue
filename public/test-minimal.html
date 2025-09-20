@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoCue - 最小测试</title>
+</head>
+<body>
+  <h1>MemoCue 最小测试页面</h1>
+  <p>时间: <span id="time"></span></p>
+
+  <div id="test-alpine" style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+    <h2>Alpine.js 测试</h2>
+    <div x-data="{ count: 0 }">
+      <button @click="count++" style="padding: 5px 10px;">点击次数: <span x-text="count">0</span></button>
+    </div>
+  </div>
+
+  <script>
+    // 显示当前时间
+    document.getElementById('time').textContent = new Date().toLocaleString();
+    console.log('页面已加载');
+
+    // 手动加载 Alpine.js（不用 defer）
+    const script = document.createElement('script');
+    script.src = '/memocue/lib/alpine.min.js';
+    script.onload = function() {
+      console.log('Alpine.js 已加载');
+      setTimeout(() => {
+        console.log('Alpine 对象:', typeof window.Alpine);
+      }, 1000);
+    };
+    script.onerror = function() {
+      console.error('Alpine.js 加载失败');
+    };
+    document.head.appendChild(script);
+  </script>
+</body>
+</html>

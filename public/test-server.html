@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务器测试页面</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .status { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    .success { background: #d4edda; }
+    .error { background: #f8d7da; }
+    .pending { background: #fff3cd; }
+  </style>
+</head>
+<body>
+  <h1>组件加载测试</h1>
+  <div id="status"></div>
+
+  <script>
+    const statusDiv = document.getElementById('status');
+
+    function log(message, type = 'pending') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      statusDiv.appendChild(div);
+      console.log(message);
+    }
+
+    // 测试单个组件加载
+    async function testComponentLoad(path) {
+      const url = `/memocue/${path}`;
+      log(`Testing: ${url}`);
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const text = await response.text();
+          log(`✅ Success: ${path} (${text.length} bytes)`, 'success');
+          return true;
+        } else {
+          log(`❌ Failed: ${path} (${response.status})`, 'error');
+          return false;
+        }
+      } catch (error) {
+        log(`❌ Error: ${path} - ${error.message}`, 'error');
+        return false;
+      }
+    }
+
+    // 测试所有组件
+    async function testAllComponents() {
+      log('Starting component tests...');
+
+      const components = [
+        'components/navbar.html',
+        'components/sidebar.html',
+        'components/dashboard-content.html',
+        'components/task-list.html',
+        'components/modals/task-modal.html',
+        'components/modals/device-modal.html',
+        'components/modals/category-modal.html',
+        'components/message-toast.html'
+      ];
+
+      for (const component of components) {
+        await testComponentLoad(component);
+      }
+
+      log('Component tests completed!');
+
+      // 测试 Alpine.js
+      log('Testing Alpine.js...');
+      const alpineUrl = '/memocue/lib/alpine.min.js';
+
+      try {
+        const response = await fetch(alpineUrl);
+        if (response.ok) {
+          const text = await response.text();
+          log(`✅ Alpine.js loaded (${text.length} bytes)`, 'success');
+
+          // 检查是否是正确的 Alpine.js 内容
+          if (text.length < 1000) {
+            log(`⚠️ Alpine.js file seems too small!`, 'error');
+          }
+        } else {
+          log(`❌ Alpine.js failed to load (${response.status})`, 'error');
+        }
+      } catch (error) {
+        log(`❌ Alpine.js error: ${error.message}`, 'error');
+      }
+    }
+
+    // 开始测试
+    testAllComponents();
+  </script>
+</body>
+</html>
