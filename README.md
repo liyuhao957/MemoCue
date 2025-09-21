@@ -9,6 +9,8 @@
 [![Node.js](https://img.shields.io/badge/Node.js-≥18-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+[📖 文档](./README.md) | [🚀 部署指南](./DEPLOYMENT_GUIDE.md) | [📦 下载](https://github.com/liyuhao957/memocue/releases)
+
 </div>
 
 ## ✨ 主要功能
@@ -174,7 +176,7 @@ LOG_LEVEL=info  # 日志级别：debug/info/warn/error
 
 ## 🚀 部署指南
 
-### 使用 PM2 管理
+### 快速部署（PM2）
 ```bash
 # 安装 PM2
 npm install -g pm2
@@ -182,15 +184,21 @@ npm install -g pm2
 # 启动服务
 pm2 start src/server.js --name memocue
 
-# 查看状态
-pm2 status
-
-# 查看日志
-pm2 logs memocue
-
-# 重启服务
-pm2 restart memocue
+# 设置开机自启
+pm2 startup
+pm2 save
 ```
+
+### 生产环境部署
+
+详细的生产环境部署指南请参考 [**部署文档**](./DEPLOYMENT_GUIDE.md)，包括：
+
+- ✅ **多种部署方式**：独立服务、Nginx 反向代理、Docker 容器化
+- ✅ **子路径部署**：在现有网站下部署（如 `/memocue`）
+- ✅ **HTTPS 配置**：使用 Let's Encrypt 免费证书
+- ✅ **性能优化**：PM2 集群模式、日志轮转、内存限制
+- ✅ **备份恢复**：自动备份脚本和数据恢复流程
+- ✅ **故障排查**：常见问题和解决方案
 
 ## 🔧 故障排除
 
@@ -204,10 +212,6 @@ pm2 restart memocue
 ## 📞 支持
 
 - 提交 [Issue](https://github.com/liyuhao957/memocue/issues) 报告问题
-
-## 📄 许可证
-
-MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ---
 

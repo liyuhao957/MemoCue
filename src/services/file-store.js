@@ -66,10 +66,19 @@ class FileStore {
     // 获取文件锁
     let release = null;
     try {
-      // 如果文件存在，获取锁
+      // 如果文件存在，获取锁（增强重试机制）
       try {
         await fs.access(filepath);
-        release = await lockfile.lock(filepath, { retries: 10 });
+        release = await lockfile.lock(filepath, {
+          retries: {
+            retries: 20,         // 增加重试次数
+            minTimeout: 100,     // 最小重试间隔
+            maxTimeout: 1000,    // 最大重试间隔
+            randomize: true      // 随机化重试间隔，避免竞争
+          },
+          stale: 10000,          // 锁过期时间 10秒
+          updateDelay: 100       // 更新锁的延迟
+        });
       } catch (err) {
         // 文件不存在，无需锁
       }
@@ -94,10 +103,19 @@ class FileStore {
 
     let release = null;
     try {
-      // 获取文件锁
+      // 获取文件锁（增强重试机制）
       try {
         await fs.access(filepath);
-        release = await lockfile.lock(filepath, { retries: 10 });
+        release = await lockfile.lock(filepath, {
+          retries: {
+            retries: 20,         // 增加重试次数
+            minTimeout: 100,     // 最小重试间隔
+            maxTimeout: 1000,    // 最大重试间隔
+            randomize: true      // 随机化重试间隔，避免竞争
+          },
+          stale: 10000,          // 锁过期时间 10秒
+          updateDelay: 100       // 更新锁的延迟
+        });
       } catch (err) {
         // 文件不存在
       }

@@ -7,18 +7,24 @@ class SSEManager extends EventEmitter {
     super();
     this.connections = new Map(); // 存储所有活跃连接
     this.connectionId = 0;
+
+    // 监听进程退出事件，清理所有连接
+    process.on('SIGTERM', () => this.cleanupAllConnections());
+    process.on('SIGINT', () => this.cleanupAllConnections());
+    process.on('beforeExit', () => this.cleanupAllConnections());
   }
 
   // 添加新的SSE连接
   addConnection(req, res) {
     const id = ++this.connectionId;
-    
+
     // 设置SSE响应头
+    // 注意：CORS 已经在全局中间件处理，这里只设置 SSE 特定头部
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*'
+      'Connection': 'keep-alive'
+      // 移除 Access-Control-Allow-Origin，使用全局 CORS 配置
     });
 
     // 发送初始连接确认
@@ -90,7 +96,54 @@ class SSEManager extends EventEmitter {
   getConnectionCount() {
     return this.connections.size;
   }
+
+  // 清理所有连接（进程退出时调用）
+  cleanupAllConnections() {
+    logger.info(`Cleaning up ${this.connections.size} SSE connections`);
+
+    this.connections.forEach((res, id) => {
+      try {
+        // 发送关闭通知
+        res.write('data: {"type":"server_shutdown"}\n\n');
+        res.end();
+      } catch (error) {
+        // 忽略错误，连接可能已经关闭
+      }
+    });
+
+    // 清空连接映射
+    this.connections.clear();
+  }
+
+  // 检查并清理死连接
+  checkAndCleanDeadConnections() {
+    const deadConnections = [];
+
+    this.connections.forEach((res, id) => {
+      // 检查连接是否仍然有效
+      if (res.destroyed || res.finished) {
+        deadConnections.push(id);
+      }
+    });
+
+    // 清理死连接
+    deadConnections.forEach(id => {
+      this.connections.delete(id);
+      logger.debug(`Cleaned up dead SSE connection: ${id}`);
+    });
+
+    if (deadConnections.length > 0) {
+      logger.info(`Cleaned ${deadConnections.length} dead SSE connections`);
+    }
+  }
 }
 
 // 单例模式
-module.exports = new SSEManager();
+const sseManager = new SSEManager();
+
+// 定期检查并清理死连接（60秒一次）
+setInterval(() => {
+  sseManager.checkAndCleanDeadConnections();
+}, 60000);
+
+module.exports = sseManager;

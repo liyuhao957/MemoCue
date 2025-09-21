@@ -147,7 +147,13 @@ function memoCueApp() {
     // API 请求封装
     async api(url, options = {}) {
       try {
-        const response = await fetch(url, {
+        // 处理 BASE_PATH - 如果已配置且 URL 以 /api 开头，添加 BASE_PATH 前缀
+        let finalUrl = url;
+        if (window.APP_CONFIG && window.APP_CONFIG.BASE_PATH && url.startsWith('/api')) {
+          finalUrl = window.APP_CONFIG.BASE_PATH + url;
+        }
+
+        const response = await fetch(finalUrl, {
           ...options,
           headers: {
             'Content-Type': 'application/json',

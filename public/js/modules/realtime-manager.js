@@ -5,9 +5,12 @@
 const RealtimeManager = {
   eventSource: null,
   reconnectAttempts: 0,
-  maxReconnectAttempts: 5,
-  reconnectDelay: 3000,
+  maxReconnectAttempts: 10,  // 增加重试次数
+  reconnectDelay: 1000,      // 缩短初始重连延迟
+  maxReconnectDelay: 10000,  // 最大重连延迟
+  reconnectBackoff: 1.5,     // 指数退避系数
   isConnected: false,
+  reconnectTimer: null,
   app: null,
 
   // 初始化 SSE 连接
@@ -38,8 +41,17 @@ const RealtimeManager = {
       return; // 已连接
     }
 
+    // 清除之前的重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     try {
-      this.eventSource = new EventSource('/api/events');
+      // 使用配置的 BASE_PATH
+      const basePath = window.APP_CONFIG?.BASE_PATH || '';
+      const eventUrl = `${basePath}/api/events`;
+      this.eventSource = new EventSource(eventUrl);
       
       // 连接打开
       this.eventSource.onopen = () => {
@@ -78,6 +90,12 @@ const RealtimeManager = {
 
   // 断开连接
   disconnect() {
+    // 清除重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;
@@ -249,19 +267,37 @@ const RealtimeManager = {
     }
   },
 
-  // 计划重连
+  // 计划重连（改进版）
   scheduleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('已达最大重连次数，停止重连');
+    // 如果已经有重连定时器，不要重复创建
+    if (this.reconnectTimer) {
       return;
     }
 
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('已达最大重连次数，停止重连');
+      this.showConnectionStatus('failed');
+      // 30秒后重置重连次数并再次尝试
+      setTimeout(() => {
+        this.reconnectAttempts = 0;
+        this.connect();
+      }, 30000);
+      return;
+    }
+
+    // 计算重连延迟（指数退避）
+    const delay = Math.min(
+      this.reconnectDelay * Math.pow(this.reconnectBackoff, this.reconnectAttempts),
+      this.maxReconnectDelay
+    );
+
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * this.reconnectAttempts;
-    
-    console.log(`将在 ${delay}ms 后尝试第 ${this.reconnectAttempts} 次重连`);
-    
-    setTimeout(() => {
+
+    console.log(`将在 ${(delay / 1000).toFixed(1)} 秒后尝试第 ${this.reconnectAttempts} 次重连`);
+    this.showConnectionStatus('reconnecting');
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       this.disconnect();
       this.connect();
     }, delay);

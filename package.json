@@ -10,6 +10,8 @@
     "build:js": "esbuild public/js/*.js --bundle --minify --outdir=public/dist",
     "data:init": "node scripts/init-data.js",
     "data:backup": "node scripts/backup.js",
+    "init:dirs": "node scripts/init-dirs.js",
+    "deploy:setup": "npm run init:dirs && npm run data:init",
     "check": "npm run check:size && npm run check:lines",
     "check:size": "find src -name '*.js' -exec wc -l {} + | awk '{if($1>300) print $2 \" has \" $1 \" lines (max: 300)\"}'",
     "check:lines": "echo 'Checking file line counts...'"
@@ -36,7 +38,7 @@
     "tailwindcss": "^3.3.6"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=16.0.0"
   },
   "author": "liyuhao957",
   "license": "MIT"

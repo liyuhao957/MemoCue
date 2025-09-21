@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MemoCue - 智能提醒助手</title>
+  <!--
+    注意：以下依赖从 CDN 加载，在国内网络环境可能存在访问问题
+    生产环境建议：
+    1. 下载到本地 public/vendor/ 目录
+    2. 使用国内 CDN 镜像（如 bootcdn.cn）
+    3. 或使用 index-simple.html（已支持本地加载）
+  -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script src="https://unpkg.com/dayjs@1.x.x/dayjs.min.js"></script>
   <script src="https://unpkg.com/dayjs@1.x.x/locale/zh-cn.js"></script>
@@ -43,6 +50,9 @@
     <div id="message-toast-container"></div>
 
   </div>
+
+  <!-- 配置文件（必须最先加载） -->
+  <script src="js/config.js"></script>
 
   <!-- 组件加载器 -->
   <script src="js/component-loader.js"></script>

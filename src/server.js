@@ -25,28 +25,71 @@ const sseManager = require('./services/sse-manager');
 // 创建 Express 应用
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_PATH = process.env.BASE_PATH || '';
 
-// 安全中间件
+// 记录配置信息
+if (BASE_PATH) {
+  logger.info('Path configuration', { BASE_PATH, API_BASE_PATH: BASE_PATH });
+}
+
+// 信任代理（用于获取真实客户端 IP）
+app.set('trust proxy', true);
+
+// 检测是否应启用 HTTPS 安全策略
+// 可以通过环境变量控制，或根据实际部署情况自动检测
+const enforceHttps = process.env.ENFORCE_HTTPS === 'true';
+
+// 安全中间件 - 智能兼容 HTTP/HTTPS
 app.use(helmet({
+  // HSTS 仅在 HTTPS 环境启用
+  hsts: enforceHttps ? {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  } : false,
+
+  // 跨域策略根据环境调整
+  crossOriginOpenerPolicy: enforceHttps ? { policy: "same-origin" } : false,
+  crossOriginResourcePolicy: enforceHttps ? { policy: "same-origin" } : false,
+  originAgentCluster: enforceHttps,
+
+  // CSP 配置
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
+      frameSrc: ["'none'"],
+      // 仅在 HTTPS 环境下升级不安全请求
+      ...(enforceHttps && { upgradeInsecureRequests: [] })
     }
   }
 }));
 
+// 动态协议检测中间件（可选，更智能的方案）
+app.use((req, res, next) => {
+  // 检测实际请求是否通过 HTTPS
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
+  // 如果是 HTTPS 请求但未设置强制 HTTPS，可以记录或处理
+  if (isHttps && !enforceHttps) {
+    logger.debug('HTTPS request detected in HTTP mode');
+  }
+
+  next();
+});
+
 // CORS 配置
+const corsOrigin = process.env.CORS_ORIGIN || '*';
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true
+  origin: corsOrigin === '*' ? true : corsOrigin, // 当允许所有源时，使用 true 而不是 '*'
+  credentials: corsOrigin !== '*' // 只有非通配符时才启用 credentials
 }));
 
 // 请求限制
@@ -63,19 +106,26 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // 自定义 keyGenerator 以避免 trust proxy 安全问题
+  keyGenerator: (req) => {
+    // 优先使用真实 IP，回退到 socket 地址
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
+  skip: (req) => {
+    // 跳过本地请求的限流
+    const ip = req.ip || req.socket.remoteAddress;
+    return ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+  }
 });
 
-app.use('/api', limiter);
+app.use(`${BASE_PATH}/api`, limiter);
 
 // 请求解析
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 静态文件服务
-app.use(express.static(path.join(__dirname, '..', 'public')));
-
-// 健康检查端点
-app.get('/health', (req, res) => {
+// 健康检查端点（支持子目录部署）
+app.get(`${BASE_PATH}/health`, (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -86,7 +136,7 @@ app.get('/health', (req, res) => {
 });
 
 // API 状态端点
-app.get('/api/status', (req, res) => {
+app.get(`${BASE_PATH}/api/status`, (req, res) => {
   res.json({
     version: '1.0.0',
     name: 'MemoCue Lite',
@@ -96,20 +146,20 @@ app.get('/api/status', (req, res) => {
 });
 
 // SSE 实时推送端点（需要在普通路由之前注册）
-app.get('/api/events', (req, res) => {
+app.get(`${BASE_PATH}/api/events`, (req, res) => {
   logger.info('New SSE connection request');
   sseManager.addConnection(req, res);
 });
 
-// 注册 API 路由
-app.use('/api/tasks', tasksRouter);
-app.use('/api/devices', devicesRouter);
-app.use('/api/categories', categoriesRouter);
-app.use('/api/push', pushRouter);
-app.use('/api/logs', logsRouter);
+// 注册 API 路由（支持子目录部署）
+app.use(`${BASE_PATH}/api/tasks`, tasksRouter);
+app.use(`${BASE_PATH}/api/devices`, devicesRouter);
+app.use(`${BASE_PATH}/api/categories`, categoriesRouter);
+app.use(`${BASE_PATH}/api/push`, pushRouter);
+app.use(`${BASE_PATH}/api/logs`, logsRouter);
 
 // 导出/导入功能
-app.get('/api/export', async (req, res, next) => {
+app.get(`${BASE_PATH}/api/export`, async (req, res, next) => {
   try {
     const data = {
       tasks: await fileStore.readJson('tasks.json', []),
@@ -127,7 +177,7 @@ app.get('/api/export', async (req, res, next) => {
   }
 });
 
-app.post('/api/import', async (req, res, next) => {
+app.post(`${BASE_PATH}/api/import`, async (req, res, next) => {
   try {
     const { tasks, devices, categories } = req.body;
     const cryptoUtil = require('./utils/crypto');
@@ -294,10 +344,77 @@ app.post('/api/import', async (req, res, next) => {
   }
 });
 
-// SPA 路由处理
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
+// HTML 配置注入中间件
+function injectConfigToHTML(req, res) {
+  const fs = require('fs');
+  const htmlPath = path.join(__dirname, '..', 'public', 'index.html');
+
+  fs.readFile(htmlPath, 'utf8', (err, html) => {
+    if (err) {
+      logger.error('Failed to read index.html', { error: err.message });
+      return res.status(500).send('Internal Server Error');
+    }
+
+    // 注入配置脚本
+    const configScript = `
+    <script id="server-config">
+      // 服务端注入的配置
+      window.SERVER_CONFIG = {
+        BASE_PATH: '${BASE_PATH}',
+        API_BASE_PATH: '${BASE_PATH}'
+      };
+      console.log('[Config Injection] Successfully injected config for BASE_PATH: "${BASE_PATH}"');
+    </script>
+    `;
+
+    // 在 </head> 之前注入配置
+    const injectedHTML = html.replace('</head>', `${configScript}\n</head>`);
+
+    res.set('Content-Type', 'text/html');
+    res.send(injectedHTML);
+  });
+}
+
+// HTML 配置注入路由（必须在静态文件中间件之前）
+if (BASE_PATH) {
+  // 子目录模式：为 HTML 文件提供配置注入
+  app.get(`${BASE_PATH}`, injectConfigToHTML);
+  app.get(`${BASE_PATH}/index.html`, injectConfigToHTML);
+}
+
+// 静态文件服务（必须在配置注入之后，确保 HTML 可以被注入）
+if (BASE_PATH) {
+  // 子目录模式：将静态文件挂载到 BASE_PATH 下
+  app.use(BASE_PATH, express.static(path.join(__dirname, '..', 'public')));
+} else {
+  // 根目录模式：直接挂载静态文件
+  app.use(express.static(path.join(__dirname, '..', 'public')));
+}
+
+// SPA 路由处理（支持子目录部署）
+// 注意：这个通配符路由必须在所有其他路由之后
+if (BASE_PATH) {
+  // 子目录模式：处理其他 SPA 路由
+  app.get(`${BASE_PATH}/*`, injectConfigToHTML);
+
+  // 根路径重定向到 BASE_PATH
+  // 注意：这是兜底逻辑，正常情况下反向代理会拦截根路径请求
+  // x-forwarded-path 头部是可选的，通常不需要设置
+  app.get('/', (req, res) => {
+    // 如果设置了 BASE_PATH，重定向到子目录
+    // 这主要用于直接访问端口的场景（如 http://localhost:3000）
+    res.redirect(BASE_PATH);
+  });
+} else {
+  // 根目录模式：首先处理根路径和 index.html
+  app.get('/', injectConfigToHTML);
+  app.get('/index.html', injectConfigToHTML);
+
+  // 然后注册静态文件服务（已在上面注册）
+
+  // 最后捕获所有其他路由
+  app.get('*', injectConfigToHTML);
+}
 
 // 错误处理
 app.use(notFoundHandler);
@@ -307,8 +424,8 @@ app.use(errorHandler);
 async function gracefulShutdown(signal) {
   logger.info(`Received ${signal}, starting graceful shutdown`);
 
-  // 停止调度器
-  scheduler.stop();
+  // 停止调度器（包含释放锁）
+  await scheduler.stop();
 
   // 关闭服务器
   server.close(() => {
@@ -341,6 +458,13 @@ async function startServer() {
         env: 'unified',
         timezone: process.env.TZ || 'Asia/Shanghai'
       });
+
+      // 发送 ready 信号给 PM2（如果在 PM2 环境中运行）
+      if (process.send) {
+        process.send('ready');
+        logger.info('PM2 ready signal sent');
+      }
+
       console.log(`
 ╔══════════════════════════════════════╗
 ║       MemoCue Lite Server            ║

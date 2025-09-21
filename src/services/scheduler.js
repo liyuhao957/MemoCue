@@ -11,6 +11,7 @@ const SchedulerCore = require('./scheduler-core');
 const TaskManager = require('./task-manager');
 const TaskScheduler = require('./task-scheduler');
 const logger = require('../utils/logger');
+const instanceLock = require('../utils/instance-lock');
 const { SCHEDULER } = require('../config/constants');
 
 // 配置 dayjs
@@ -30,16 +31,34 @@ class Scheduler {
 
   /**
    * 启动调度器
+   * 使用实例锁确保只有一个进程运行调度器
    */
   async start() {
+    // 尝试获取调度器锁
+    const hasLock = await instanceLock.acquireLock();
+
+    if (!hasLock) {
+      logger.info('Scheduler not started - another instance is running');
+      // 不启动调度器，但服务照常运行（API、SSE等）
+      return false;
+    }
+
+    // 成功获取锁，启动调度器
     await this.core.start(this.loadAllTasks, this.checkTasks);
+    logger.info('Scheduler started with exclusive lock');
+    return true;
   }
 
   /**
    * 停止调度器
+   * 同时释放实例锁
    */
-  stop() {
+  async stop() {
     this.core.stop();
+
+    // 释放调度器锁
+    await instanceLock.releaseLock();
+    logger.info('Scheduler stopped and lock released');
   }
 
   /**
